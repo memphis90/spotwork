@@ -1,4 +1,4 @@
-/.phpunit.cache
+﻿/.phpunit.cache
 /node_modules
 /public/build
 /public/hot
@@ -24,3 +24,6 @@ yarn-error.log
 /.claude
 
 CLAUDE.local.md
+
+CLAUDE.md
+CLAUDE.local.md.example

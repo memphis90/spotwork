@@ -5,31 +5,28 @@ namespace App\Http\Controllers;
 use App\Services\GeocodingService;
 use App\Services\IndeedService;
 use App\Services\OverpassService;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
-    private GeocodingService $geocoding;
-    private OverpassService $overpass;
-    private IndeedService $indeed;
+    public function __construct(
+        private GeocodingService $geocoding,
+        private OverpassService  $overpass,
+        private IndeedService    $indeed,
+    ) {}
 
-
-    public function index(GeocodingService $geocoding, OverpassService $overpass, IndeedService $indeed){
-        $this->geocoding = $geocoding;
-        $this->overpass  = $overpass;
-        $this->indeed    = $indeed;
-    }
-
-    public function search(Request $request){
-
+    public function search(Request $request)
+    {
         $request->validate([
-            'city' => 'required|string|max:100',
-            'radius' => 'required|integer|in:2000,5000,10000,25000,50000',
-            'required|string|in:all,it,industry,retail,health,food,finance',
+            'city'     => 'required|string|max:100',
+            'radius'   => 'required|integer|in:2000,5000,10000,25000,50000',
+            'category' => 'required|string|in:all,it,industry,retail,health,food,finance',
         ]);
 
-        [$lat, $lon] = $this->geocoding->geocode($request->city);
-        $companies   = $this->overpass->search($lat, $lon, $request->radius, $request->category);
+        $geo     = $this->geocoding->geocode($request->city);
+        $lat     = (float) ($geo[0]['lat'] ?? 0);
+        $lon     = (float) ($geo[0]['lon'] ?? 0);
+        $companies = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category);
 
         return response()->json(compact('lat', 'lon', 'companies'));
     }
