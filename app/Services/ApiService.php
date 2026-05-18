@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services;
 
@@ -22,7 +22,7 @@ class ApiService
 
     public function post(string $url, string $body): array {
         try {
-            $response = $this->client->request('POST', $url, ['body' => $body]);
+            $response = $this->client->request('POST', $url, ['form_params' => ['data' => $body]]);
             return json_decode($response->getBody()->getContents(), true) ?? [];
         } catch (\Exception $e) {
             \Log::error('API call failed', ['url' => $url, 'error' => $e->getMessage()]);
@@ -43,3 +43,4 @@ class ApiService
 
 
 }
+

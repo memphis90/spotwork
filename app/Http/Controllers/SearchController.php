@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -23,10 +23,37 @@ class SearchController extends Controller
             'category' => 'required|string|in:all,it,industry,retail,health,food,finance',
         ]);
 
-        $geo     = $this->geocoding->geocode($request->city);
-        $lat     = (float) ($geo[0]['lat'] ?? 0);
-        $lon     = (float) ($geo[0]['lon'] ?? 0);
-        $companies = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category);
+        $geo = $this->geocoding->geocode($request->city);
+        $lat = (float) ($geo[0]['lat'] ?? 0);
+        $lon = (float) ($geo[0]['lon'] ?? 0);
+
+        $raw       = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category);
+        $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request) {
+            $tags   = $el['tags'] ?? [];
+            $elLat  = (float) ($el['lat'] ?? $el['center']['lat'] ?? 0);
+            $elLon  = (float) ($el['lon'] ?? $el['center']['lon'] ?? 0);
+
+            $address = collect([
+                $tags['addr:street']      ?? null,
+                $tags['addr:housenumber'] ?? null,
+                $tags['addr:city']        ?? null,
+            ])->filter()->implode(', ');
+
+            return [
+                'id'       => $el['id'],
+                'name'     => $tags['name'],
+                'lat'      => $elLat,
+                'lon'      => $elLon,
+                'distance' => $this->haversineKm($lat, $lon, $elLat, $elLon),
+                'category' => $this->detectCategory($tags, $request->category),
+                'address'  => $address ?: null,
+                'website'  => $tags['website'] ?? $tags['url'] ?? $tags['contact:website'] ?? null,
+                'phone'    => $tags['phone'] ?? $tags['contact:phone'] ?? null,
+                'size'     => $tags['employees'] ?? null,
+                'hiring'   => false,
+                'jobs'     => 0,
+            ];
+        })->values()->toArray();
 
         return response()->json(compact('lat', 'lon', 'companies'));
     }
@@ -40,5 +67,31 @@ class SearchController extends Controller
 
         $jobs = $this->indeed->getJobs($request->name, $request->city);
         return response()->json(['jobs' => $jobs]);
+    }
+
+    private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a    = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+        return round(6371 * 2 * atan2(sqrt($a), sqrt(1 - $a)), 1);
+    }
+
+    private function detectCategory(array $tags, string $requested): string
+    {
+        if ($requested !== 'all') return $requested;
+
+        $office  = $tags['office']   ?? '';
+        $amenity = $tags['amenity']  ?? '';
+        $manMade = $tags['man_made'] ?? '';
+
+        if ($tags['shop']        ?? false) return 'retail';
+        if ($tags['healthcare']  ?? false) return 'health';
+        if (preg_match('/it|software|computer|coworking/i', $office))              return 'it';
+        if (preg_match('/works|factory/i', $manMade))                              return 'industry';
+        if (preg_match('/hospital|clinic|doctors|dentist|pharmacy/i', $amenity))   return 'health';
+        if (preg_match('/restaurant|cafe|fast_food|bar|pub/i', $amenity))          return 'food';
+        if (preg_match('/bank|bureau_de_change/i', $amenity))                      return 'finance';
+        return 'all';
     }
 }
