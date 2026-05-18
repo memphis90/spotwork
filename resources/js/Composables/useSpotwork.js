@@ -24,7 +24,7 @@ const RADII = [
 ]
 
 export function useSpotwork() {
-  const query  = reactive({ city: 'Milano, MI', radius: 5000, category: 'all' })
+  const query  = reactive({ city: 'Milano, MI', radius: 5000, category: 'all', keywords: [] })
   const mode   = ref('idle')           // idle | loading | results | error
   const error  = ref(null)
   const center = ref({ lat: 45.4642, lon: 9.1900 })

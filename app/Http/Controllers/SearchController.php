@@ -1,9 +1,10 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers;
 
 use App\Services\GeocodingService;
 use App\Services\IndeedService;
+use App\Services\JobSearchService;
 use App\Services\OverpassService;
 use Illuminate\Http\Request;
 
@@ -13,19 +14,27 @@ class SearchController extends Controller
         private GeocodingService $geocoding,
         private OverpassService  $overpass,
         private IndeedService    $indeed,
+        private JobSearchService $jobSearch,
     ) {}
 
     public function search(Request $request)
     {
         $request->validate([
-            'city'     => 'required|string|max:100',
-            'radius'   => 'required|integer|in:2000,5000,10000,25000,50000',
-            'category' => 'required|string|in:all,it,industry,retail,health,food,finance',
+            'city'       => 'required|string|max:100',
+            'radius'     => 'required|integer|in:2000,5000,10000,25000,50000',
+            'category'   => 'required|string|in:all,it,industry,retail,health,food,finance',
+            'keywords'   => 'sometimes|array|max:5',
+            'keywords.*' => 'string|max:50',
         ]);
 
         $geo = $this->geocoding->geocode($request->city);
         $lat = (float) ($geo[0]['lat'] ?? 0);
         $lon = (float) ($geo[0]['lon'] ?? 0);
+
+        if ($request->filled('keywords')) {
+            $companies = $this->jobSearch->search($lat, $lon, (int) $request->radius, $request->keywords);
+            return response()->json(compact('lat', 'lon', 'companies'));
+        }
 
         $raw       = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category);
         $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request) {

@@ -48,9 +48,9 @@ body {
 .sw-map .leaflet-control-attribution { font-size: 10px; background: rgba(255,255,255,.7); }
 
 /* â”€â”€â”€ search bar (top floating) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.sw-search { position: relative; z-index: 1100; padding: 14px 16px 12px; background: linear-gradient(var(--sw-bg) 60%, transparent); }
-.sw-search-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
-.sw-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 0; }
+.sw-search { position: relative; z-index: 1100; padding: 14px 20px 12px; background: linear-gradient(var(--sw-bg) 60%, transparent); }
+.sw-search-inner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; width: 100%; }
+.sw-brand { display: flex; align-items: center; gap: 10px; justify-content: flex-start; min-width: 0; }
 .sw-brand svg { flex-shrink: 0; }
 .sw-brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .sw-brand-text b { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
@@ -63,7 +63,7 @@ body {
   border-radius: 999px;
   padding: 4px;
   box-shadow: var(--sw-shadow-1);
-  flex: 1; max-width: 760px;
+  flex: 0 1 760px; width: 100%;
 }
 .sw-field { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 14px 0 12px; min-width: 0; }
 .sw-field + .sw-field { border-left: 1px solid var(--sw-line); }
@@ -578,3 +578,79 @@ body {
     border-radius: 12px;
   }
 }
+
+.sw-brand-logo {
+    height: 32px;
+    width: auto;
+}
+
+
+/* ─── keyword chips ─────────────────────────────────────────────────────── */
+.sw-field-keywords { flex: 1; min-width: 160px; }
+
+.sw-kw-wrap {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 4px; width: 100%;
+}
+.sw-kw-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 6px 2px 8px;
+  background: var(--sw-ink); color: var(--sw-bg);
+  border-radius: 999px; font-size: 12px; font-weight: 500;
+  white-space: nowrap;
+}
+.sw-kw-remove {
+  background: none; border: none; color: inherit;
+  cursor: pointer; padding: 0; line-height: 1; font-size: 14px; opacity: .7;
+}
+.sw-kw-remove:hover { opacity: 1; }
+.sw-kw-input {
+  border: 0; outline: 0; background: transparent;
+  font: inherit; color: var(--sw-ink);
+  min-width: 80px; flex: 1;
+}
+.sw-kw-input::placeholder { color: var(--sw-muted); }
+.sw-field-keywords:has(.sw-kw-chip) .sw-field-ic { color: var(--sw-ink); }
+
+/* ─── account zone ──────────────────────────────────────────────────────── */
+.sw-account { position: relative; display: flex; justify-content: flex-end; }
+
+.sw-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--sw-ink); color: var(--sw-bg);
+  border: none; cursor: pointer;
+  font: 600 13px/1 "Manrope", sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s;
+}
+.sw-avatar:hover { opacity: .8; }
+
+.sw-account-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 140px;
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-line);
+  border-radius: var(--sw-radius-sm);
+  box-shadow: var(--sw-shadow-2);
+  display: flex; flex-direction: column;
+  overflow: hidden; z-index: 1200;
+}
+.sw-account-item {
+  padding: 10px 14px; text-align: left; background: none; border: none;
+  font: 14px/1 "Manrope", sans-serif; color: var(--sw-ink);
+  cursor: pointer; text-decoration: none; display: block;
+  transition: background .1s;
+}
+.sw-account-item:hover { background: var(--sw-bg); }
+.sw-account-item--danger { color: #dc2626; }
+
+.sw-btn-login {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--sw-line);
+  background: var(--sw-surface);
+  color: var(--sw-ink); text-decoration: none;
+  font: 500 13px/1 "Manrope", sans-serif;
+  white-space: nowrap;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sw-btn-login:hover { border-color: var(--sw-ink); box-shadow: var(--sw-shadow-1); }

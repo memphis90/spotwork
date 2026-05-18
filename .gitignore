@@ -22,6 +22,7 @@ yarn-error.log
 /.vscode
 /.zed
 /.claude
+/docs
 
 CLAUDE.local.md
 

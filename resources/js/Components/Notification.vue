@@ -6,7 +6,7 @@ const flash = computed(() => usePage().props.flash)
 const visible = ref(false)
 
 watch(flash, (val) => {
-    if (val.success || val.error) {
+    if (val?.success || val?.error) {
         visible.value = true
         setTimeout(() => visible.value = false, 3000)
     }

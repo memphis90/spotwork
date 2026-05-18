@@ -1,6 +1,8 @@
-<script setup>
+﻿<script setup>
 // resources/js/Components/SearchBar.vue
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { usePage, router } from '@inertiajs/vue3'
+
 
 const props = defineProps({
   query:        { type: Object, required: true },
@@ -12,29 +14,53 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:query', 'search'])
 
+const page = usePage()
+const user = () => page.props.auth?.user
+
 const SUGGESTIONS = [
   'Milano, MI','Roma, RM','Torino, TO','Bologna, BO','Firenze, FI',
   'Napoli, NA','Genova, GE','Bergamo, BG','Brescia, BS','Padova, PD',
   'Verona, VR','Bari, BA',
 ]
 
-const cityOpen   = ref(false)
-const radiusOpen = ref(false)
-const catOpen    = ref(false)
-const cityRef    = ref(null)
-const radiusRef  = ref(null)
-const catRef     = ref(null)
+const cityOpen    = ref(false)
+const radiusOpen  = ref(false)
+const catOpen     = ref(false)
+const accountOpen = ref(false)
+const cityRef     = ref(null)
+const radiusRef   = ref(null)
+const catRef      = ref(null)
+const accountRef  = ref(null)
+const kwInput     = ref('')
 
 function update(patch) { emit('update:query', { ...props.query, ...patch }) }
 function commit(extra)  { emit('search', { ...props.query, ...(extra || {}) }) }
 
 function onDoc(e) {
-  if (cityRef.value   && !cityRef.value.contains(e.target))   cityOpen.value = false
-  if (radiusRef.value && !radiusRef.value.contains(e.target)) radiusOpen.value = false
-  if (catRef.value    && !catRef.value.contains(e.target))    catOpen.value = false
+  if (cityRef.value    && !cityRef.value.contains(e.target))    cityOpen.value = false
+  if (radiusRef.value  && !radiusRef.value.contains(e.target))  radiusOpen.value = false
+  if (catRef.value     && !catRef.value.contains(e.target))     catOpen.value = false
+  if (accountRef.value && !accountRef.value.contains(e.target)) accountOpen.value = false
 }
 onMounted(() => document.addEventListener('mousedown', onDoc))
 onBeforeUnmount(() => document.removeEventListener('mousedown', onDoc))
+
+function addKeyword() {
+  const kw = kwInput.value.trim().replace(/,+$/, '')
+  if (!kw || (props.query.keywords || []).includes(kw)) return
+  if ((props.query.keywords || []).length >= 5) return
+  update({ keywords: [...(props.query.keywords || []), kw] })
+  kwInput.value = ''
+}
+function removeKeyword(kw) {
+  update({ keywords: (props.query.keywords || []).filter(k => k !== kw) })
+}
+function onKwKeydown(e) {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addKeyword(); commit() }
+  if (e.key === 'Backspace' && !kwInput.value && (props.query.keywords || []).length) {
+    removeKeyword(props.query.keywords.at(-1))
+  }
+}
 
 function citySuggestions() {
   const q = (props.query.city || '').toLowerCase()
@@ -46,20 +72,20 @@ function radiusLabel() {
 function categoryObj() {
   return props.categories.find(c => c.id === props.query.category) || props.categories[0]
 }
+function userInitial() {
+  return (user()?.name || '?')[0].toUpperCase()
+}
+function logout() {
+  router.post('/logout')
+}
 </script>
 
 <template>
   <div :class="['sw-search', mode === 'idle' ? 'sw-search-idle' : 'sw-search-compact']">
     <div class="sw-search-inner">
+
       <div class="sw-brand">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z" fill="#0e1014"/>
-          <circle cx="12" cy="10" r="2.6" fill="#fafaf7"/>
-        </svg>
-        <div class="sw-brand-text">
-          <b>spotwork</b>
-          <span>Aziende che assumono vicino a te</span>
-        </div>
+        <img src="@img/sw_full.jpg" alt="Spotwork" class="sw-brand-logo" />
       </div>
 
       <div class="sw-search-fields">
@@ -122,6 +148,27 @@ function categoryObj() {
           </div>
         </div>
 
+        <!-- keywords -->
+        <div class="sw-field sw-field-keywords">
+          <svg class="sw-field-ic" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 5h12M2 8h8M2 11h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <div class="sw-kw-wrap">
+            <span v-for="kw in (query.keywords || [])" :key="kw" class="sw-kw-chip">
+              {{ kw }}
+              <button class="sw-kw-remove" @mousedown.prevent="removeKeyword(kw)" aria-label="Rimuovi">×</button>
+            </span>
+            <input
+              v-if="(query.keywords || []).length < 5"
+              class="sw-kw-input"
+              :placeholder="(query.keywords || []).length === 0 ? 'es. php laravel' : ''"
+              v-model="kwInput"
+              @keydown="onKwKeydown"
+              @blur="addKeyword"
+            />
+          </div>
+        </div>
+
         <button class="sw-btn-primary" :disabled="loading" @click="commit()">
           <span v-if="loading" class="sw-spin" aria-hidden="true" />
           <svg v-else width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -132,10 +179,33 @@ function categoryObj() {
         </button>
       </div>
 
-      <div v-if="mode === 'results' && resultsCount != null" class="sw-search-meta">
-        <span class="sw-meta-dot" />
-        <span>{{ resultsCount }} aziende trovate</span>
+      <!-- account zone -->
+      <div class="sw-account" ref="accountRef">
+        <template v-if="user()">
+          <button class="sw-avatar" @click="accountOpen = !accountOpen" :title="user().name">
+            {{ userInitial() }}
+          </button>
+          <div v-if="accountOpen" class="sw-account-menu">
+            <a href="/account" class="sw-account-item">Salvati</a>
+            <a href="/account/alerts" class="sw-account-item">Alert</a>
+            <button class="sw-account-item sw-account-item--danger" @click="logout">Esci</button>
+          </div>
+        </template>
+        <template v-else>
+          <a href="/login" class="sw-btn-login">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <span>Accedi</span>
+          </a>
+        </template>
       </div>
+
+    </div>
+    <div v-if="mode === 'results' && resultsCount != null" class="sw-search-meta">
+      <span class="sw-meta-dot" />
+      <span>{{ resultsCount }} aziende trovate</span>
     </div>
   </div>
 </template>
