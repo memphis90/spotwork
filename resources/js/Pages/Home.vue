@@ -52,6 +52,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
         @select="onSelect"
       />
 
+      <!-- loading overlay -->
+      <Teleport to="body">
+        <div v-if="sw.mode.value === 'loading'" class="sw-loading-overlay">
+          <img src="@img/sw_full.jpg" alt="Spotwork" class="sw-loading-logo" />
+        </div>
+      </Teleport>
+
       <div v-if="sw.mode.value === 'idle'" class="sw-overlay-hint">
         <div class="sw-hint-card">
           <div class="sw-hint-kicker">Spotwork</div>
