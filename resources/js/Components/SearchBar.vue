@@ -19,9 +19,35 @@ const user = () => page.props.auth?.user
 const { openLoginModal } = useLoginModal()
 
 const SUGGESTIONS = [
-  'Milano, MI','Roma, RM','Torino, TO','Bologna, BO','Firenze, FI',
-  'Napoli, NA','Genova, GE','Bergamo, BG','Brescia, BS','Padova, PD',
-  'Verona, VR','Bari, BA',
+  'Italia',
+  'Agrigento, AG','Alessandria, AL','Ancona, AN',"Valle d'Aosta, AO",
+  'Ascoli Piceno, AP',"L'Aquila, AQ",'Arezzo, AR','Asti, AT',
+  'Avellino, AV','Bari, BA','Bergamo, BG','Biella, BI',
+  'Belluno, BL','Benevento, BN','Bologna, BO','Brindisi, BR',
+  'Brescia, BS','Barletta-Andria-Trani, BT','Bolzano, BZ',
+  'Cagliari, CA','Campobasso, CB','Caserta, CE','Chieti, CH',
+  'Caltanissetta, CL','Cuneo, CN','Como, CO','Cremona, CR',
+  'Cosenza, CS','Catania, CT','Catanzaro, CZ','Enna, EN',
+  'Forlì-Cesena, FC','Ferrara, FE','Foggia, FG','Firenze, FI',
+  'Fermo, FM','Frosinone, FR','Genova, GE','Gorizia, GO',
+  'Grosseto, GR','Imperia, IM','Isernia, IS','Crotone, KR',
+  'Lecco, LC','Lecce, LE','Livorno, LI','Lodi, LO',
+  'Latina, LT','Lucca, LU','Monza e Brianza, MB','Macerata, MC',
+  'Messina, ME','Milano, MI','Mantova, MN','Modena, MO',
+  'Massa-Carrara, MS','Matera, MT','Napoli, NA','Novara, NO',
+  'Nuoro, NU','Oristano, OR','Palermo, PA','Piacenza, PC',
+  'Padova, PD','Pescara, PE','Perugia, PG','Pisa, PI',
+  'Pordenone, PN','Prato, PO','Parma, PR','Pistoia, PT',
+  'Pesaro e Urbino, PU','Pavia, PV','Potenza, PZ','Ravenna, RA',
+  'Reggio Calabria, RC','Reggio Emilia, RE','Ragusa, RG','Rieti, RI',
+  'Roma, RM','Rimini, RN','Rovigo, RO','Salerno, SA',
+  'Siena, SI','Sondrio, SO','La Spezia, SP','Siracusa, SR',
+  'Sassari, SS','Sud Sardegna, SU','Savona, SV','Taranto, TA',
+  'Teramo, TE','Trento, TN','Torino, TO','Trapani, TP',
+  'Terni, TR','Trieste, TS','Treviso, TV','Udine, UD',
+  'Varese, VA','Verbano-Cusio-Ossola, VB','Vercelli, VC',
+  'Venezia, VE','Vicenza, VI','Verona, VR','Viterbo, VT',
+  'Vibo Valentia, VV',
 ]
 
 const cityOpen    = ref(false)
@@ -64,8 +90,12 @@ function onKwKeydown(e) {
 }
 
 function citySuggestions() {
-  const q = (props.query.city || '').toLowerCase()
-  return SUGGESTIONS.filter(s => s.toLowerCase().includes(q)).slice(0, 6)
+  const q = (props.query.city || '').trim()
+  if (!q) return SUGGESTIONS.slice(0, 6)
+  const matches = SUGGESTIONS.filter(s => s.toLowerCase().includes(q.toLowerCase())).slice(0, 5)
+  const exactInList = matches.some(s => s.toLowerCase() === q.toLowerCase())
+  if (!exactInList && q.length >= 2) matches.push(q)
+  return matches
 }
 function radiusLabel() {
   return props.radii.find(r => r.value === props.query.radius)?.label || 'Raggio'
@@ -96,7 +126,7 @@ function logout() {
             <path d="M8 14s5-4.5 5-8.5A5 5 0 1 0 3 5.5C3 9.5 8 14 8 14Z" stroke="currentColor" stroke-width="1.4"/>
             <circle cx="8" cy="5.5" r="1.8" stroke="currentColor" stroke-width="1.4"/>
           </svg>
-          <input class="sw-input" placeholder="Città o comune"
+          <input class="sw-input" placeholder="Città, provincia o Italia"
                  :value="query.city"
                  @input="e => { update({ city: e.target.value }); cityOpen = true }"
                  @focus="cityOpen = true"
@@ -104,7 +134,7 @@ function logout() {
                  @keydown.escape="cityOpen = false" />
           <div v-if="cityOpen && citySuggestions().length" class="sw-suggest">
             <button v-for="s in citySuggestions()" :key="s" class="sw-suggest-item"
-                    @mousedown.prevent="update({ city: s }); cityOpen = false; commit({ city: s })">
+                    @mousedown.prevent="update({ city: s }); cityOpen = false">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                 <path d="M8 14s5-4.5 5-8.5A5 5 0 1 0 3 5.5C3 9.5 8 14 8 14Z" stroke="currentColor" stroke-width="1.4"/>
               </svg>
@@ -113,8 +143,8 @@ function logout() {
           </div>
         </div>
 
-        <!-- radius -->
-        <div class="sw-field sw-field-radius" ref="radiusRef">
+        <!-- radius — hidden when Italia is selected -->
+        <div v-if="query.city !== 'Italia'" class="sw-field sw-field-radius" ref="radiusRef">
           <svg class="sw-field-ic" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/>
             <circle cx="8" cy="8" r="1.4" fill="currentColor"/>
@@ -213,8 +243,7 @@ function logout() {
             {{ userInitial() }}
           </button>
           <div v-if="accountOpen" class="sw-account-menu">
-            <a href="/saved" class="sw-account-item">Salvati</a>
-            <a href="/account/alerts" class="sw-account-item">Alert</a>
+            <a href="/settings" class="sw-account-item">Impostazioni</a>
             <button class="sw-account-item sw-account-item--danger" @click="logout">Esci</button>
           </div>
         </template>
