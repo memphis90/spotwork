@@ -1,6 +1,7 @@
 <script setup>
 // resources/js/Pages/Home.vue — pagina principale Spotwork
 import AppLayout from '@/Layouts/AppLayout.vue'
+import { Head } from '@inertiajs/vue3'
 import SearchBar     from '@/Components/SearchBar.vue'
 import MapView       from '@/Components/MapView.vue'
 import Sidebar       from '@/Components/Sidebar.vue'
@@ -29,6 +30,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
 </script>
 
 <template>
+  <Head title="Mappa" />
   <div class="sw-app" :data-density="density">
     <SearchBar
       :query="sw.query"
@@ -36,8 +38,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
       :radii="sw.RADII"
       :loading="sw.mode.value === 'loading'"
       :mode="sw.mode.value"
-      :results-count="sw.mode.value === 'results' ? sw.companies.value.length : null"
-      @update:query="q => Object.assign(sw.query, q)"
+@update:query="q => Object.assign(sw.query, q)"
       @search="onSearch"
     />
 

@@ -12,12 +12,25 @@ const props = defineProps({
 const emit = defineEmits(['close','toggleSave','loadJobs'])
 
 const tab = ref('info')
+const copied = ref(false)
 
-watch(() => props.company?.id, () => { tab.value = 'info' })
+watch(() => props.company?.id, () => { tab.value = 'info'; copied.value = false })
 
 function openJobs() {
   tab.value = 'jobs'
   emit('loadJobs', props.company.id)
+}
+
+async function share() {
+  const text = [props.company.name, props.company.address].filter(Boolean).join('\n')
+  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(props.company.name + ' ' + props.company.address)}`
+  if (navigator.share) {
+    await navigator.share({ title: props.company.name, text, url: mapsUrl }).catch(() => {})
+  } else {
+    await navigator.clipboard.writeText(text + '\n' + mapsUrl)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  }
 }
 </script>
 
@@ -34,6 +47,17 @@ function openJobs() {
         <div class="sw-detail-cat-label">{{ category.label }}</div>
         <h2>{{ company.name }}</h2>
       </div>
+      <button class="sw-save sw-save-lg" @click="share" :title="copied ? 'Copiato!' : 'Condividi'">
+        <svg v-if="copied" width="18" height="18" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg v-else width="18" height="18" viewBox="0 0 16 16" fill="none">
+          <circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M6 7l4-2M6 9l4 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
       <button :class="['sw-save sw-save-lg', isSaved && 'is-on']"
               @click="$emit('toggleSave', company.id)"
               :title="isSaved ? 'Rimuovi dai salvati' : 'Salva'">

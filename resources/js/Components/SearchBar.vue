@@ -2,6 +2,7 @@
 // resources/js/Components/SearchBar.vue
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
+import { useLoginModal } from '@/Composables/useLoginModal'
 
 
 const props = defineProps({
@@ -10,12 +11,12 @@ const props = defineProps({
   radii:        { type: Array,  required: true },
   loading:      { type: Boolean, default: false },
   mode:         { type: String, default: 'idle' },
-  resultsCount: { type: [Number, null], default: null },
 })
 const emit = defineEmits(['update:query', 'search'])
 
 const page = usePage()
 const user = () => page.props.auth?.user
+const { openLoginModal } = useLoginModal()
 
 const SUGGESTIONS = [
   'Milano, MI','Roma, RM','Torino, TO','Bologna, BO','Firenze, FI',
@@ -182,30 +183,51 @@ function logout() {
       <!-- account zone -->
       <div class="sw-account" ref="accountRef">
         <template v-if="user()">
+          <a href="/saved" class="sw-icon-btn" title="Salvati">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 2h8a1 1 0 0 1 1 1v10.5l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="/account/alerts" class="sw-icon-btn" title="Alert lavoro">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2a5 5 0 0 1 5 5v2.5l1.5 2H1.5L3 9.5V7a5 5 0 0 1 5-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </a>
+        </template>
+        <template v-else>
+          <button class="sw-icon-btn" @click="openLoginModal()" title="Salvati">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 2h8a1 1 0 0 1 1 1v10.5l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="sw-icon-btn" @click="openLoginModal()" title="Alert lavoro">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2a5 5 0 0 1 5 5v2.5l1.5 2H1.5L3 9.5V7a5 5 0 0 1 5-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </template>
+        <template v-if="user()">
           <button class="sw-avatar" @click="accountOpen = !accountOpen" :title="user().name">
             {{ userInitial() }}
           </button>
           <div v-if="accountOpen" class="sw-account-menu">
-            <a href="/account" class="sw-account-item">Salvati</a>
+            <a href="/saved" class="sw-account-item">Salvati</a>
             <a href="/account/alerts" class="sw-account-item">Alert</a>
             <button class="sw-account-item sw-account-item--danger" @click="logout">Esci</button>
           </div>
         </template>
         <template v-else>
-          <a href="/login" class="sw-btn-login">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+          <button class="sw-icon-btn" @click="openLoginModal()" title="Accedi">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
               <path d="M2.5 14c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
-            <span>Accedi</span>
-          </a>
+          </button>
         </template>
       </div>
 
-    </div>
-    <div v-if="mode === 'results' && resultsCount != null" class="sw-search-meta">
-      <span class="sw-meta-dot" />
-      <span>{{ resultsCount }} aziende trovate</span>
     </div>
   </div>
 </template>
