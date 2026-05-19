@@ -1,6 +1,8 @@
 <script setup>
 // resources/js/Components/CompanyDetail.vue
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import { useLoginModal } from '@/Composables/useLoginModal'
 
 const props = defineProps({
   company:     { type: Object, required: true },
@@ -11,10 +13,27 @@ const props = defineProps({
 })
 const emit = defineEmits(['close','toggleSave','loadJobs'])
 
-const tab = ref('info')
+const page     = usePage()
+const authUser = () => page.props.auth?.user
+const { openLoginModal } = useLoginModal()
+
+const tab    = ref('info')
 const copied = ref(false)
 
-watch(() => props.company?.id, () => { tab.value = 'info'; copied.value = false })
+const applyOpen    = ref(false)
+const applyMessage = ref('')
+const applyCopied  = ref(false)
+
+const DEFAULT_MESSAGE =
+  'Gentile team,\n\nVi scrivo per esprimere il mio interesse a lavorare nella vostra azienda.\n\n' +
+  'Allego il mio curriculum vitae e rimango a disposizione per un colloquio conoscitivo.\n\n' +
+  'Cordiali saluti'
+
+watch(() => props.company?.id, () => {
+  tab.value      = 'info'
+  copied.value   = false
+  applyOpen.value = false
+})
 
 function openJobs() {
   tab.value = 'jobs'
@@ -22,7 +41,7 @@ function openJobs() {
 }
 
 async function share() {
-  const text = [props.company.name, props.company.address].filter(Boolean).join('\n')
+  const text    = [props.company.name, props.company.address].filter(Boolean).join('\n')
   const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(props.company.name + ' ' + props.company.address)}`
   if (navigator.share) {
     await navigator.share({ title: props.company.name, text, url: mapsUrl }).catch(() => {})
@@ -31,6 +50,24 @@ async function share() {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2000)
   }
+}
+
+function handleApply() {
+  if (!authUser()) { openLoginModal(); return }
+  applyMessage.value = authUser().application_message || DEFAULT_MESSAGE
+  applyOpen.value = true
+}
+
+function applyMailto() {
+  const subject = `Candidatura spontanea — ${props.company.name}`
+  const href    = `mailto:${props.company.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(applyMessage.value)}`
+  window.open(href)
+}
+
+async function copyApplyText() {
+  await navigator.clipboard.writeText(applyMessage.value)
+  applyCopied.value = true
+  setTimeout(() => { applyCopied.value = false }, 2000)
 }
 </script>
 
@@ -81,7 +118,7 @@ async function share() {
           <b>Nessun annuncio attivo</b>
           <span>Aperta a candidature spontanee — invia il CV all'azienda</span>
         </div>
-        <button class="sw-btn-secondary sw-btn-sm">Invia candidatura</button>
+        <button class="sw-btn-secondary sw-btn-sm" @click="handleApply">Invia candidatura</button>
       </div>
     </div>
 
@@ -106,9 +143,13 @@ async function share() {
             </a>
           </div>
         </div>
-        <div class="sw-info-row">
+        <div v-if="company.website" class="sw-info-row">
           <div class="sw-info-label">Sito web</div>
-          <div class="sw-info-val"><a class="sw-link" target="_blank" rel="noreferrer" :href="'https://' + company.website">{{ company.website }}</a></div>
+          <div class="sw-info-val"><a class="sw-link" target="_blank" rel="noreferrer" :href="company.website.startsWith('http') ? company.website : 'https://' + company.website">{{ company.website }}</a></div>
+        </div>
+        <div v-if="company.email" class="sw-info-row">
+          <div class="sw-info-label">Email</div>
+          <div class="sw-info-val"><a class="sw-link" :href="'mailto:' + company.email">{{ company.email }}</a></div>
         </div>
         <div class="sw-info-row">
           <div class="sw-info-label">Telefono</div>
@@ -166,4 +207,54 @@ async function share() {
       </div>
     </div>
   </div>
+
+    <!-- Apply modal -->
+    <Teleport to="body">
+      <div v-if="applyOpen" class="sw-apply-backdrop" @click.self="applyOpen = false">
+        <div class="sw-apply-modal">
+          <div class="sw-apply-head">
+            <h3>Candidatura — {{ company.name }}</h3>
+            <button class="sw-detail-close" @click="applyOpen = false" aria-label="Chiudi">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="authUser() && !authUser().cv_path" class="sw-apply-warning">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2l6 12H2L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Nessun CV caricato.
+            <a href="/settings" class="sw-apply-warning-link">Vai in Impostazioni →</a>
+            poi allegalo manualmente.
+          </div>
+
+          <textarea
+            class="sw-apply-textarea"
+            v-model="applyMessage"
+            rows="10"
+            placeholder="Scrivi il tuo messaggio..."
+          />
+
+          <div class="sw-apply-foot">
+            <button class="sw-btn-secondary sw-btn-sm" @click="applyOpen = false">Annulla</button>
+            <template v-if="company.email">
+              <button class="sw-btn-primary sw-btn-sm" @click="applyMailto">
+                Apri client email
+              </button>
+            </template>
+            <template v-else>
+              <button class="sw-btn-secondary sw-btn-sm" @click="copyApplyText">
+                {{ applyCopied ? 'Copiato!' : 'Copia testo' }}
+              </button>
+              <span class="sw-apply-noemail">
+                Email non disponibile — verifica sul sito aziendale
+              </span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 </template>

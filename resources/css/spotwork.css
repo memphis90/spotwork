@@ -760,3 +760,47 @@ body {
 .st-upload-hint  { font-size: .75rem; color: var(--sw-muted); }
 .st-uploading    { font-size: .8rem; color: var(--sw-muted); text-align: center; }
 .sw-icon-btn:active { color: var(--sw-teal); }
+
+/* ───── Apply modal (sw-apply-*) ───── */
+.sw-apply-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.sw-apply-modal {
+  background: var(--sw-surface);
+  border: 1px solid var(--sw-line);
+  border-radius: 14px;
+  width: 100%; max-width: 540px;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+}
+.sw-apply-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sw-apply-head h3 { font-size: .95rem; font-weight: 600; color: var(--sw-ink); }
+
+.sw-apply-warning {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: .8rem; color: #b45309;
+  background: #fef9c3; border: 1px solid #fde68a;
+  border-radius: 8px; padding: 10px 12px;
+}
+.sw-apply-warning-link { color: #b45309; font-weight: 600; text-decoration: underline; }
+
+.sw-apply-textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--sw-line); border-radius: 8px;
+  background: var(--sw-bg); color: var(--sw-ink);
+  font-size: .83rem; line-height: 1.55; resize: vertical;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.sw-apply-textarea:focus { outline: none; border-color: var(--sw-accent); }
+
+.sw-apply-foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
+}
+.sw-apply-noemail { font-size: .75rem; color: var(--sw-muted); flex: 1; }
