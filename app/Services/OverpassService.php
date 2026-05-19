@@ -7,6 +7,18 @@ use Illuminate\Support\Str;
 
 class OverpassService
 {
+    private const EXCLUDED_AMENITIES = [
+        'school', 'university', 'college', 'kindergarten',
+        'place_of_worship', 'community_centre', 'social_facility',
+        'library', 'townhall', 'prison', 'courthouse',
+    ];
+
+    private const EXCLUDED_OFFICES = [
+        'trade_union', 'labour', 'ngo', 'association',
+        'charity', 'political_party', 'religion', 'foundation',
+        'educational_institution',
+    ];
+
     private const CATEGORY_FILTERS = [
         'it'       => '"office"~"it|software|computer|coworking"',
         'industry' => '"man_made"~"works|factory"',
@@ -37,6 +49,13 @@ class OverpassService
 
             return collect($result['elements'] ?? [])
                 ->filter(fn($el) => !empty($el['tags']['name']))
+                ->filter(function ($el) {
+                    $tags    = $el['tags'] ?? [];
+                    $amenity = $tags['amenity'] ?? '';
+                    $office  = $tags['office']  ?? '';
+                    return !in_array($amenity, self::EXCLUDED_AMENITIES)
+                        && !in_array($office,  self::EXCLUDED_OFFICES);
+                })
                 ->values()
                 ->toArray();
         });

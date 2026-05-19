@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
-    protected $fillable = ['osm_id', 'name', 'lat', 'lon', 'category', 'address', 'source'];
+    protected $fillable = ['osm_id', 'name', 'lat', 'lon', 'category', 'address', 'email', 'source'];
 
     public function savedByUsers(): HasMany
     {

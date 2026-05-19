@@ -24,7 +24,7 @@ class SearchController extends Controller
             'radius'     => 'required|integer|in:2000,5000,10000,25000,50000',
             'category'   => 'required|string|in:all,it,industry,retail,health,food,finance',
             'keywords'   => 'sometimes|array|max:5',
-            'keywords.*' => 'string|max:50',
+            'keywords.*' => 'string|max:50|regex:/^[\pL\pN\s\-\.+#]+$/u',
         ]);
 
         $geo = $this->geocoding->geocode($request->city);
@@ -32,7 +32,7 @@ class SearchController extends Controller
         $lon = (float) ($geo[0]['lon'] ?? 0);
 
         if ($request->filled('keywords')) {
-            $companies = $this->jobSearch->search($lat, $lon, (int) $request->radius, $request->keywords);
+            $companies = $this->jobSearch->search($lat, $lon, (int) $request->radius, $request->keywords, $request->city);
             return response()->json(compact('lat', 'lon', 'companies'));
         }
 
@@ -56,7 +56,8 @@ class SearchController extends Controller
                 'distance' => $this->haversineKm($lat, $lon, $elLat, $elLon),
                 'category' => $this->detectCategory($tags, $request->category),
                 'address'  => $address ?: null,
-                'website'  => $tags['website'] ?? $tags['url'] ?? $tags['contact:website'] ?? null,
+                'website'  => $this->normalizeUrl($tags['website'] ?? $tags['url'] ?? $tags['contact:website'] ?? null),
+                'email'    => $tags['email'] ?? $tags['contact:email'] ?? null,
                 'phone'    => $tags['phone'] ?? $tags['contact:phone'] ?? null,
                 'size'     => $tags['employees'] ?? null,
                 'hiring'   => false,
@@ -76,6 +77,18 @@ class SearchController extends Controller
 
         $jobs = $this->indeed->getJobs($request->name, $request->city);
         return response()->json(['jobs' => $jobs]);
+    }
+
+    private function normalizeUrl(?string $url): ?string
+    {
+        if (!$url) return null;
+        // strip any duplicate protocol (e.g. "https://https://..." or "https://http://...")
+        $url = preg_replace('#^(https?://)+(https?://)#', '$2', $url);
+        // ensure it starts with a protocol
+        if (!preg_match('#^https?://#', $url)) {
+            $url = 'https://' . $url;
+        }
+        return rtrim($url, '/') ?: null;
     }
 
     private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float

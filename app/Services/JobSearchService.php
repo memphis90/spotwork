@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Company;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use SerpApi\GoogleSearch;
 
 class JobSearchService
 {
@@ -13,44 +12,44 @@ class JobSearchService
         private GeocodingService $geocoding,
     ) {}
 
-    public function search(float $lat, float $lon, int $radius, array $keywords): array
+    public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = ''): array
     {
-        $q   = implode(' ', $keywords);
-        $key = 'jobsearch:' . Str::slug($q) . ":{$lat}:{$lon}:{$radius}";
+        $q        = implode(' ', $keywords);
+        $isItalia = strtolower(trim($rawCity)) === 'italia';
+        $key      = $isItalia
+            ? 'jobsearch:' . Str::slug($q) . ':italia'
+            : 'jobsearch:' . Str::slug($q) . ":{$lat}:{$lon}:{$radius}";
 
-        return Cache::remember($key, 3600, function () use ($lat, $lon, $radius, $q, $keywords) {
-            $city = $this->geocoding->reverse($lat, $lon);
+        return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia) {
+            $serpLocation = $isItalia ? 'Italy' : ($this->geocoding->reverse($lat, $lon) . ', Italy');
 
-            $client  = new GoogleSearch(['api_key' => config('services.serpapi.key')]);
-            $results = $client->get_json([
+            $client  = new \GoogleSearchResults(config('services.serpapi.key'));
+            $results = json_decode(json_encode($client->get_json([
                 'engine'   => 'google_jobs',
                 'q'        => $q,
-                'location' => $city . ', Italy',
+                'location' => $serpLocation,
                 'hl'       => 'it',
                 'gl'       => 'it',
-            ]);
+            ])), true);
 
-            $jobs = $results['jobs_results'] ?? [];
-
-            // Group by company, geocode each, return company shape
-            $grouped = collect($jobs)->groupBy('company_name');
+            $grouped = collect($results['jobs_results'] ?? [])->groupBy('company_name');
 
             $companies = [];
             foreach ($grouped as $companyName => $companyJobs) {
-                $firstJob = $companyJobs->first();
-                $location = $firstJob['location'] ?? $city;
+                $jobLocation = $companyJobs->first()['location'] ?? $serpLocation;
 
-                $geo   = $this->geocoding->geocode($location);
-                $cLat  = (float) ($geo[0]['lat'] ?? $lat);
-                $cLon  = (float) ($geo[0]['lon'] ?? $lon);
+                $geo  = $this->geocoding->geocode($jobLocation);
+                $cLat = (float) ($geo[0]['lat'] ?? $lat);
+                $cLon = (float) ($geo[0]['lon'] ?? $lon);
 
                 $company = Company::upsertFromData([
-                    'name'    => $companyName,
-                    'lat'     => $cLat,
-                    'lon'     => $cLon,
+                    'name'     => $companyName,
+                    'lat'      => $cLat,
+                    'lon'      => $cLon,
                     'category' => 'all',
-                    'address' => $location,
-                    'source'  => 'serpapi',
+                    'address'  => $jobLocation,
+                    'email'    => null,
+                    'source'   => 'serpapi',
                 ]);
 
                 $companies[] = [
@@ -60,8 +59,9 @@ class JobSearchService
                     'lon'      => $cLon,
                     'distance' => $this->haversineKm($lat, $lon, $cLat, $cLon),
                     'category' => 'all',
-                    'address'  => $location,
+                    'address'  => $jobLocation,
                     'website'  => null,
+                    'email'    => null,
                     'phone'    => null,
                     'size'     => null,
                     'hiring'   => true,
