@@ -23,6 +23,7 @@ yarn-error.log
 /.zed
 /.claude
 /docs
+/.agents
 
 CLAUDE.local.md
 

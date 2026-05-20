@@ -212,9 +212,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
       />
     </div>
 
-    <!-- Mobile: splash screen (first load) -->
+    <!-- Splash screen (first load, all viewports) -->
     <MobileSplash
-      v-if="isMobile && showSplash"
+      v-if="showSplash"
       @done="showSplash = false"
     />
 

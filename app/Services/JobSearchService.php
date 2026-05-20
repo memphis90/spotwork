@@ -68,7 +68,6 @@ class JobSearchService
                     'jobs'     => $companyJobs->count(),
                 ];
             }
-
             return $companies;
         });
     }

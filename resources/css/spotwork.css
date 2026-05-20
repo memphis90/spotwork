@@ -834,6 +834,17 @@ body {
   width: 100%;
 }
 
+/* ─── Splash screen (all viewports) ─────────────────────────────────── */
+.sw-msplash {
+  position: fixed; inset: 0; background: #ffffff; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; cursor: pointer;
+}
+.sw-msplash-logo-img {
+  /*width: 720px;*/
+  height: auto; display: block;
+}
+
 @media (max-width: 640px) {
   .sw-app { height: 100dvh; }
   .sw-stage { display: block; position: relative; flex: 1; min-height: 0; overflow: hidden; }
@@ -942,14 +953,7 @@ body {
   .sw-mdock-iconbtn:active { background: color-mix(in oklch, var(--sw-ink) 6%, transparent); }
 
   /* ─── Splash screen ──────────────────────────────────────────── */
-  .sw-msplash {
-    position: fixed; inset: 0; background: #ffffff; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px; cursor: pointer;
-  }
-  .sw-msplash-inner { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(78%, 280px); }
-  .sw-msplash-logo { width: 100%; height: auto; display: block; overflow: visible; }
-  .sw-msplash-logo-img { width: min(60vw, 220px); height: auto; display: block; }
+  .sw-msplash-logo-img { width: 720px; max-width: unset; }
   .sw-msplash-by {
     align-self: flex-end; text-align: right;
     font: 300 11px/1 Verdana, "Verdana Pro", Geneva, sans-serif;
