@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SavedController;
 use App\Http\Controllers\SettingsController;
@@ -24,6 +25,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/cv',         [SettingsController::class, 'uploadCv'])->name('settings.cv.upload');
     Route::delete('/settings/cv',       [SettingsController::class, 'deleteCv'])->name('settings.cv.delete');
     Route::get('/settings/cv/download', [SettingsController::class, 'downloadCv'])->name('settings.cv.download');
+
+    Route::post('/companies/{company}/suggest-email', [CompanyController::class, 'suggestEmail'])
+        ->name('companies.suggest-email');
 });
 
 require __DIR__.'/auth.php';

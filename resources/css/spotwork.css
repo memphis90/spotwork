@@ -804,3 +804,20 @@ body {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
 }
 .sw-apply-noemail { font-size: .75rem; color: var(--sw-muted); flex: 1; }
+
+/* ───── Suggest email (CompanyDetail) ───── */
+.sw-suggest-email {
+  margin-top: 8px; padding: 12px;
+  background: var(--sw-bg); border: 1px dashed var(--sw-line);
+  border-radius: 8px;
+}
+.sw-suggest-email-label { font-size: .78rem; color: var(--sw-muted); margin-bottom: 8px; }
+.sw-suggest-email-form  { display: flex; gap: 6px; }
+.sw-suggest-email-input {
+  flex: 1; padding: 6px 10px; font-size: .82rem;
+  border: 1px solid var(--sw-line); border-radius: 6px;
+  background: var(--sw-surface); color: var(--sw-ink);
+}
+.sw-suggest-email-input:focus { outline: none; border-color: var(--sw-accent); }
+.sw-suggest-email-error { font-size: .75rem; color: #ef4444; margin-top: 6px; }
+.sw-suggest-email-ok    { font-size: .8rem;  color: #22c55e; }

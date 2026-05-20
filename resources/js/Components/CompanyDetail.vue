@@ -24,15 +24,23 @@ const applyOpen    = ref(false)
 const applyMessage = ref('')
 const applyCopied  = ref(false)
 
+const suggestEmail   = ref('')
+const suggestLoading = ref(false)
+const suggestDone    = ref(false)
+const suggestError   = ref('')
+
 const DEFAULT_MESSAGE =
   'Gentile team,\n\nVi scrivo per esprimere il mio interesse a lavorare nella vostra azienda.\n\n' +
   'Allego il mio curriculum vitae e rimango a disposizione per un colloquio conoscitivo.\n\n' +
   'Cordiali saluti'
 
 watch(() => props.company?.id, () => {
-  tab.value      = 'info'
-  copied.value   = false
-  applyOpen.value = false
+  tab.value          = 'info'
+  copied.value       = false
+  applyOpen.value    = false
+  suggestDone.value  = false
+  suggestError.value = ''
+  suggestEmail.value = ''
 })
 
 function openJobs() {
@@ -68,6 +76,28 @@ async function copyApplyText() {
   await navigator.clipboard.writeText(applyMessage.value)
   applyCopied.value = true
   setTimeout(() => { applyCopied.value = false }, 2000)
+}
+
+async function submitSuggestEmail() {
+  suggestLoading.value = true
+  suggestError.value   = ''
+  try {
+    const res = await fetch(`/companies/${props.company.id}/suggest-email`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+      },
+      body: JSON.stringify({ email: suggestEmail.value }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Errore')
+    suggestDone.value = true
+  } catch (e) {
+    suggestError.value = e.message
+  } finally {
+    suggestLoading.value = false
+  }
 }
 </script>
 
@@ -166,6 +196,28 @@ async function copyApplyText() {
         <div class="sw-info-row">
           <div class="sw-info-label">Fonte</div>
           <div class="sw-info-val">OpenStreetMap · Overpass API</div>
+        </div>
+
+        <div v-if="!company.email" class="sw-suggest-email">
+          <template v-if="!suggestDone">
+            <p class="sw-suggest-email-label">Conosci l'email di questa azienda?</p>
+            <div class="sw-suggest-email-form">
+              <input
+                class="sw-suggest-email-input"
+                type="email"
+                placeholder="info@azienda.it"
+                v-model="suggestEmail"
+                @keydown.enter="submitSuggestEmail"
+              />
+              <button
+                class="sw-btn-secondary sw-btn-sm"
+                :disabled="suggestLoading || !suggestEmail"
+                @click="submitSuggestEmail"
+              >{{ suggestLoading ? '…' : 'Suggerisci' }}</button>
+            </div>
+            <p v-if="suggestError" class="sw-suggest-email-error">{{ suggestError }}</p>
+          </template>
+          <p v-else class="sw-suggest-email-ok">Grazie! Email aggiunta ✓</p>
         </div>
       </div>
 
