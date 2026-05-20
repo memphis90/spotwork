@@ -10,17 +10,19 @@ import MobileBottomSearch from '@/Components/MobileBottomSearch.vue'
 import MobileSearchModal  from '@/Components/MobileSearchModal.vue'
 import BottomSheet        from '@/Components/BottomSheet.vue'
 import MobileFilterChips  from '@/Components/MobileFilterChips.vue'
+import MobileSplash       from '@/Components/MobileSplash.vue'
 import { useSpotwork } from '@/Composables/useSpotwork'
 import { useIsMobile }  from '@/Composables/useIsMobile'
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 
 defineOptions({ layout: AppLayout })
 
-const sw        = useSpotwork()
-const isMobile  = useIsMobile()
-const density   = ref(localStorage.getItem('sw_density') || 'cozy')
+const sw         = useSpotwork()
+const isMobile   = useIsMobile()
+const density    = ref(localStorage.getItem('sw_density') || 'cozy')
 const searchOpen = ref(false)
 const sheetSnap  = ref('peek')
+const showSplash = ref(true)
 
 function setDensity(d) { density.value = d; localStorage.setItem('sw_density', d) }
 
@@ -209,6 +211,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
         @load-jobs="onLoadJobs"
       />
     </div>
+
+    <!-- Mobile: splash screen (first load) -->
+    <MobileSplash
+      v-if="isMobile && showSplash"
+      @done="showSplash = false"
+    />
 
     <!-- Mobile: full-screen search modal -->
     <MobileSearchModal
