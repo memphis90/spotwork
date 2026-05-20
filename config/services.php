@@ -39,4 +39,8 @@ return [
         'key' => env('SERPAPI_KEY'),
     ],
 
+    'scraperapi' => [
+        'key' => env('SCRAPERAPI_KEY'),
+    ],
+
 ];

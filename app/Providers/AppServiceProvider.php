@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\ApiService;
+use App\Services\EmailScraperService;
 use App\Services\GeocodingService;
 use App\Services\JobSearchService;
 use GuzzleHttp\Client;
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(JobSearchService::class, fn() => new JobSearchService(
             app(GeocodingService::class),
         ));
+
+        $this->app->bind(EmailScraperService::class, fn() =>
+            new EmailScraperService(new Client(['timeout' => 15]))
+        );
     }
 
     public function boot(): void
