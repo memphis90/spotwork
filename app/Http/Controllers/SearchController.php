@@ -110,7 +110,7 @@ class SearchController extends Controller
                     }
                 }
             }
-            if (!$matched) {
+            if (!$matched && $sc['distance'] <= $request->radius / 1000) {
                 $companies[] = $sc;
             }
         }

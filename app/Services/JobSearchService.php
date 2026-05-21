@@ -23,11 +23,11 @@ class JobSearchService
         return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia, $rawCity) {
             // For named regions/areas (e.g. "Toscana") use the name directly.
             // For "Milano, MI" style inputs, reverse-geocode the coordinates.
-            $serpLocation = match(true) {
-                $isItalia               => 'Italy',
-                !str_contains($rawCity, ',') => trim($rawCity) . ', Italy',
-                default                 => $this->geocoding->reverse($lat, $lon) . ', Italy',
-            };
+            // Always use the city name the user searched — reverse-geocoding
+            // often returns a province/region and produces off-target results.
+            $serpLocation = $isItalia
+                ? 'Italy'
+                : trim(explode(',', $rawCity)[0]) . ', Italy';
 
             $client  = new \GoogleSearchResults(config('services.serpapi.key'));
             $results = json_decode(json_encode($client->get_json([
