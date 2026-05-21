@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useLoginModal } from '@/Composables/useLoginModal'
+import axios from 'axios'
 
 const props = defineProps({
   company:  { type: Object, required: true },
@@ -17,6 +18,24 @@ const authUser = () => page.props.auth?.user
 const { openLoginModal } = useLoginModal()
 
 const copied = ref(false)
+
+const glassdoor = ref(null)
+const glassdoorLoading = ref(false)
+
+async function loadGlassdoor() {
+  glassdoor.value = null
+  glassdoorLoading.value = true
+  try {
+    const { data } = await axios.get('/api/company-info', {
+      params: { name: props.company.name, city: props.city },
+    })
+    glassdoor.value = data?.rating ? data : null
+  } catch {
+    glassdoor.value = null
+  } finally {
+    glassdoorLoading.value = false
+  }
+}
 
 const applyOpen    = ref(false)
 const applyMessage = ref('')
@@ -38,7 +57,8 @@ watch(() => props.company?.id, () => {
   suggestDone.value  = false
   suggestError.value = ''
   suggestEmail.value = ''
-})
+  loadGlassdoor()
+}, { immediate: true })
 
 function indeedUrl() {
   return 'https://it.indeed.com/jobs?q=' + encodeURIComponent(props.company.name)
@@ -150,13 +170,23 @@ async function submitSuggestEmail() {
     </div>
 
     <div class="sw-detail-body">
-      <div class="sw-stars sw-stars-detail">
-        <span v-for="n in 5" :key="n"
-              :class="['sw-star', 'sw-star-btn', n <= rating && 'is-on']"
-              :title="n + ' stelle'"
-              @click="$emit('rate', company.id, rating === n ? 0 : n)">★</span>
-        <span v-if="rating" class="sw-stars-label">{{ rating }}/5</span>
-        <span v-else class="sw-stars-label sw-stars-label-empty">Valuta</span>
+      <div class="sw-detail-ratings">
+        <div class="sw-stars sw-stars-detail">
+          <span v-for="n in 5" :key="n"
+                :class="['sw-star', 'sw-star-btn', n <= rating && 'is-on']"
+                :title="n + ' stelle'"
+                @click="$emit('rate', company.id, rating === n ? 0 : n)">★</span>
+          <span v-if="rating" class="sw-stars-label">{{ rating }}/5</span>
+          <span v-else class="sw-stars-label sw-stars-label-empty">Valuta</span>
+        </div>
+
+        <a v-if="glassdoor" class="sw-glassdoor-badge"
+           :href="glassdoor.url" target="_blank" rel="noreferrer">
+          <span class="sw-glassdoor-logo">G</span>
+          <span class="sw-glassdoor-rating">{{ glassdoor.rating }}</span>
+          <span class="sw-glassdoor-reviews">{{ glassdoor.reviews.toLocaleString('it') }} rec.</span>
+        </a>
+        <span v-else-if="glassdoorLoading" class="sw-glassdoor-loading">…</span>
       </div>
 
       <div class="sw-info">

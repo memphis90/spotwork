@@ -379,10 +379,21 @@ body {
 .sw-star.is-on { color: #f59e0b; opacity: 1; }
 .sw-star-btn { cursor: pointer; background: none; border: 0; padding: 0; line-height: 1; }
 .sw-star-btn:hover { color: #f59e0b; opacity: .7; }
-.sw-stars-detail { display: flex; align-items: center; gap: 4px; padding: 10px 18px 4px; }
+.sw-detail-ratings { display: flex; align-items: center; gap: 14px; padding: 10px 18px 4px; flex-wrap: wrap; }
+.sw-stars-detail { display: flex; align-items: center; gap: 4px; }
 .sw-stars-detail .sw-star { font-size: 22px; }
 .sw-stars-label { font-size: 12px; color: var(--sw-muted); margin-left: 4px; }
 .sw-stars-label-empty { opacity: .6; }
+.sw-glassdoor-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px;
+  background: #0caa41; color: #fff;
+  text-decoration: none; font-size: 12px; font-weight: 600;
+}
+.sw-glassdoor-badge:hover { background: #09922e; }
+.sw-glassdoor-logo { font-weight: 900; font-size: 13px; }
+.sw-glassdoor-reviews { font-weight: 400; opacity: .85; }
+.sw-glassdoor-loading { font-size: 12px; color: var(--sw-muted); }
 
 .sw-badge {
   display: inline-flex; align-items: center; gap: 6px;
