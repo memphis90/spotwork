@@ -14,7 +14,7 @@ class JobSearchService
 
     public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = ''): array
     {
-        $q        = implode(' ',  array_merge(['job'], $keywords));
+        $q        = implode(' ', $keywords) ?: 'offerte lavoro';
         $isItalia = strtolower(trim($rawCity)) === 'italia';
         $key      = $isItalia
             ? 'jobsearch:' . Str::slug($q) . ':italia'

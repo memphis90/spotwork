@@ -150,19 +150,24 @@ class SearchController extends Controller
 
     private function buildEnrichTerms(string $category, array $keywords): array
     {
+        // Multi-word Italian terms produce better Google Jobs matches than
+        // single generic words, since they mirror real job description language.
         $base = match($category) {
-            'it'       => 'informatica',
-            'industry' => 'industria',
-            'retail'   => 'commercio',
-            'health'   => 'sanità',
-            'food'     => 'ristorazione',
-            'finance'  => 'finanza',
+            'it'       => 'informatica sviluppo software',
+            'industry' => 'industria produzione operaio',
+            'retail'   => 'commercio vendita negozio',
+            'health'   => 'sanità infermiere assistenza',
+            'food'     => 'ristorazione cucina cameriere',
+            'finance'  => 'finanza contabilità banca',
             default    => null,
         };
 
-        $terms = $keywords;
-        if ($base !== null) array_unshift($terms, $base);
-        return $terms;
+        if ($base !== null) {
+            return array_merge([$base], $keywords);
+        }
+
+        // Category 'all' with no keywords: use a generic Italian hiring term.
+        return $keywords ?: ['assunzioni'];
     }
 
     private function normalizeUrl(?string $url): ?string
