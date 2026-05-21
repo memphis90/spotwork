@@ -25,17 +25,16 @@ const RADII = [
 
 export function useSpotwork() {
   const query  = reactive({ city: 'Milano, MI', radius: 5000, category: 'all', keywords: [] })
-  const mode   = ref('idle')           // idle | loading | results | error
-  const error  = ref(null)
+  const mode    = ref('idle')           // idle | loading | results | error
+  const geoType = ref('city')          // city | area
+  const error   = ref(null)
   const center = ref({ lat: 45.4642, lon: 9.1900 })
   const companies  = ref([])
   const selectedId = ref(null)
   const saved      = ref(new Set(JSON.parse(localStorage.getItem('sw_saved') || '[]')))
+  const ratings    = ref(JSON.parse(localStorage.getItem('sw_ratings') || '{}'))
   const filter     = ref('all')        // all | hiring | saved
   const sort       = ref('hiring')
-  const jobs       = reactive({})       // companyId -> Job[]
-  const jobsLoading = ref(false)
-
   const hiringCount = computed(() => companies.value.filter(c => c.hiring).length)
   const savedCount  = computed(() => companies.value.filter(c => saved.value.has(c.id)).length)
 
@@ -63,6 +62,7 @@ export function useSpotwork() {
       const { data } = await axios.get('/api/search', { params: { ...query } })
       center.value    = { lat: data.lat, lon: data.lon }
       companies.value = data.companies || []
+      geoType.value   = data.geoType || 'city'
       mode.value      = 'results'
     } catch (e) {
       mode.value = 'error'
@@ -71,21 +71,11 @@ export function useSpotwork() {
     }
   }
 
-  async function loadJobs(companyId) {
-    if (jobs[companyId]) return
-    const company = companies.value.find(c => c.id === companyId)
-    if (!company) return
-    jobsLoading.value = true
-    try {
-      const { data } = await axios.get('/api/jobs', {
-        params: { name: company.name, city: query.city }
-      })
-      jobs[companyId] = data.jobs || []
-    } catch (e) {
-      jobs[companyId] = []
-    } finally {
-      jobsLoading.value = false
-    }
+  function rateCompany(id, stars) {
+    const r = { ...ratings.value }
+    stars === 0 ? delete r[id] : (r[id] = stars)
+    ratings.value = r
+    localStorage.setItem('sw_ratings', JSON.stringify(r))
   }
 
   function toggleSave(id) {
@@ -119,11 +109,11 @@ export function useSpotwork() {
     // costanti
     CATEGORIES, RADII,
     // stato
-    query, mode, error, center, companies, selectedId, saved,
-    filter, sort, jobs, jobsLoading,
+    query, mode, geoType, error, center, companies, selectedId, saved, ratings,
+    filter, sort,
     // derivate
     hiringCount, savedCount, selected, filteredCompanies,
     // azioni
-    search, loadJobs, toggleSave, exportCsv, categoryFor,
+    search, toggleSave, rateCompany, exportCsv, categoryFor,
   }
 }

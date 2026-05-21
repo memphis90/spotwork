@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\GeocodingService;
-use App\Services\IndeedService;
 use App\Services\JobSearchService;
 use App\Services\OverpassService;
 use Illuminate\Http\Request;
@@ -13,7 +12,6 @@ class SearchController extends Controller
     public function __construct(
         private GeocodingService $geocoding,
         private OverpassService  $overpass,
-        private IndeedService    $indeed,
         private JobSearchService $jobSearch,
     ) {}
 
@@ -31,13 +29,44 @@ class SearchController extends Controller
         $lat = (float) ($geo[0]['lat'] ?? 0);
         $lon = (float) ($geo[0]['lon'] ?? 0);
 
-        if ($request->filled('keywords')) {
-            $companies = $this->jobSearch->search($lat, $lon, (int) $request->radius, $request->keywords, $request->city);
-            return response()->json(compact('lat', 'lon', 'companies'));
+        $placeTypes = ['city', 'town', 'village', 'suburb', 'hamlet', 'locality', 'quarter', 'neighbourhood'];
+        $geoType    = in_array($geo[0]['type'] ?? '', $placeTypes) ? 'city' : 'area';
+        $bbox       = $geoType === 'area' ? ($geo[0]['boundingbox'] ?? null) : null;
+
+        $osmId  = (int) ($geo[0]['osm_id'] ?? 0);
+        $areaId = null;
+        if ($geoType === 'area' && $osmId > 0) {
+            $areaId = match ($geo[0]['osm_type'] ?? '') {
+                'relation' => 3600000000 + $osmId,
+                'way'      => 2400000000 + $osmId,
+                default    => null,
+            };
         }
 
-        $raw       = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category);
-        $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request) {
+        // 1. Always fetch geographic companies from Overpass.
+        $raw = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category, $areaId);
+
+        // 2. Fetch SerpAPI hiring companies.
+        $keywords    = $request->input('keywords', []);
+        $enrichTerms = $this->buildEnrichTerms($request->category, $keywords);
+        $hiringList  = [];
+        $hiringByName = collect([]);
+        try {
+            $hiringList   = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            $hiringByName = collect($hiringList)
+                ->keyBy(fn($c) => $this->normalizeName($c['name']))
+                ->map(fn($c) => (int) $c['jobs']);
+        } catch (\Throwable $e) {
+            \Log::warning('JobSearch enrichment failed', ['error' => $e->getMessage()]);
+        }
+
+        // 3. Build Overpass company list, enriching any that match a SerpAPI company.
+        $osmNormNames = collect($raw)
+            ->map(fn($el) => $this->normalizeName($el['tags']['name'] ?? ''))
+            ->filter()
+            ->all();
+
+        $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request, $hiringByName) {
             $tags   = $el['tags'] ?? [];
             $elLat  = (float) ($el['lat'] ?? $el['center']['lat'] ?? 0);
             $elLon  = (float) ($el['lon'] ?? $el['center']['lon'] ?? 0);
@@ -47,6 +76,8 @@ class SearchController extends Controller
                 $tags['addr:housenumber'] ?? null,
                 $tags['addr:city']        ?? null,
             ])->filter()->implode(', ');
+
+            $hiringCount = $this->resolveHiring($this->normalizeName($tags['name'] ?? ''), $hiringByName);
 
             return [
                 'id'       => $el['id'],
@@ -60,23 +91,78 @@ class SearchController extends Controller
                 'email'    => $tags['email'] ?? $tags['contact:email'] ?? null,
                 'phone'    => $tags['phone'] ?? $tags['contact:phone'] ?? null,
                 'size'     => $tags['employees'] ?? null,
-                'hiring'   => false,
-                'jobs'     => 0,
+                'hiring'   => $hiringCount > 0,
+                'jobs'     => $hiringCount,
             ];
         })->values()->toArray();
 
-        return response()->json(compact('lat', 'lon', 'companies'));
+        // 4. Append SerpAPI companies that have no OSM counterpart.
+        foreach ($hiringList as $sc) {
+            $scNorm = $this->normalizeName($sc['name']);
+            $matched = false;
+            if (strlen($scNorm) >= 4) {
+                foreach ($osmNormNames as $osmNorm) {
+                    if ($osmNorm === $scNorm ||
+                        (strlen($osmNorm) >= 4 &&
+                         (str_contains($osmNorm, $scNorm) || str_contains($scNorm, $osmNorm)))) {
+                        $matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!$matched) {
+                $companies[] = $sc;
+            }
+        }
+
+        // 5. For area searches without a precise OSM boundary, trim to bbox.
+        if ($bbox && $areaId === null) {
+            [$south, $north, $west, $east] = array_map('floatval', $bbox);
+            $companies = array_values(array_filter(
+                $companies,
+                fn($c) => $c['lat'] >= $south && $c['lat'] <= $north
+                       && $c['lon'] >= $west  && $c['lon'] <= $east
+            ));
+        }
+
+        return response()->json(compact('lat', 'lon', 'geoType', 'companies'));
     }
 
-    public function jobs(Request $request)
+    private function resolveHiring(string $normalizedName, \Illuminate\Support\Collection $hiringByName): int
     {
-        $request->validate([
-            'name' => 'required|string',
-            'city' => 'required|string',
-        ]);
+        // 1. Exact normalized match
+        if ($hiringByName->has($normalizedName)) {
+            return (int) $hiringByName->get($normalizedName, 0);
+        }
 
-        $jobs = $this->indeed->getJobs($request->name, $request->city);
-        return response()->json(['jobs' => $jobs]);
+        // 2. Substring match: "microsoft" matches "microsoft italia" and vice versa
+        if (strlen($normalizedName) >= 4) {
+            foreach ($hiringByName as $indeedName => $count) {
+                if (strlen((string) $indeedName) >= 4 &&
+                    (str_contains($normalizedName, (string) $indeedName) || str_contains((string) $indeedName, $normalizedName))) {
+                    return (int) $count;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    private function buildEnrichTerms(string $category, array $keywords): array
+    {
+        $base = match($category) {
+            'it'       => 'informatica',
+            'industry' => 'industria',
+            'retail'   => 'commercio',
+            'health'   => 'sanità',
+            'food'     => 'ristorazione',
+            'finance'  => 'finanza',
+            default    => null,
+        };
+
+        $terms = $keywords;
+        if ($base !== null) array_unshift($terms, $base);
+        return $terms;
     }
 
     private function normalizeUrl(?string $url): ?string
@@ -89,6 +175,17 @@ class SearchController extends Controller
             $url = 'https://' . $url;
         }
         return rtrim($url, '/') ?: null;
+    }
+
+    private function normalizeName(string $name): string
+    {
+        // Strip common Italian/EU legal suffixes for fuzzy name matching.
+        $cleaned = preg_replace(
+            '/\b(s\.?\s*p\.?\s*a\.?|s\.?\s*r\.?\s*l\.?|s\.?\s*n\.?\s*c\.?|s\.?\s*a\.?\s*s\.?|ltd\.?|inc\.?|gmbh|group|spa|srl|onlus)\b/iu',
+            '',
+            $name
+        );
+        return trim(preg_replace('/\s+/', ' ', mb_strtolower($cleaned)));
     }
 
     private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float

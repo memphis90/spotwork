@@ -1,6 +1,7 @@
 <script setup>
 // resources/js/Components/Sidebar.vue
 import CompanyCard from './CompanyCard.vue'
+import AppFooter from './AppFooter.vue'
 
 const props = defineProps({
   mode:               { type: String, required: true },
@@ -16,6 +17,7 @@ const props = defineProps({
   hiringCount:        { type: Number, default: 0 },
   savedCount:         { type: Number, default: 0 },
   categoryFor:        { type: Function, required: true },
+  ratings:            { type: Object, default: () => ({}) },
 })
 const emit = defineEmits([
   'select','toggleSave',
@@ -114,16 +116,13 @@ const emit = defineEmits([
                      :density="density"
                      :active="c.id === selectedId"
                      :saved="saved.has(c.id)"
+                     :rating="ratings[c.id] || 0"
                      :category="categoryFor(c.category)"
                      @select="id => $emit('select', id)"
                      @toggleSave="id => $emit('toggleSave', id)" />
       </div>
     </div>
 
-    <div v-if="mode === 'results' && filteredCompanies.length > 0" class="sw-side-foot">
-      <span>Dati: OpenStreetMap · Indeed</span>
-      <span>·</span>
-      <span>Aggiornato adesso</span>
-    </div>
+    <AppFooter />
   </aside>
 </template>

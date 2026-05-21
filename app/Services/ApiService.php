@@ -20,9 +20,13 @@ class ApiService
         }
     }
 
-    public function post(string $url, string $body): array {
+    public function post(string $url, string $body, int $timeout = 0): array {
         try {
-            $response = $this->client->request('POST', $url, ['form_params' => ['data' => $body]]);
+            $options = ['form_params' => ['data' => $body]];
+            if ($timeout > 0) {
+                $options['timeout'] = $timeout;
+            }
+            $response = $this->client->request('POST', $url, $options);
             return json_decode($response->getBody()->getContents(), true) ?? [];
         } catch (\Exception $e) {
             \Log::error('API call failed', ['url' => $url, 'error' => $e->getMessage()]);

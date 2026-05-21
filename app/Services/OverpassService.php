@@ -30,22 +30,41 @@ class OverpassService
 
     public function __construct(private ApiService $api) {}
 
-    public function search(float $lat, float $lon, int $radius, string $category): array
+    public function search(float $lat, float $lon, int $radius, string $category, ?int $areaId = null): array
     {
-        $key = "search:{$lat}:{$lon}:{$radius}:{$category}";
-        return Cache::remember($key, 21600, function () use ($lat, $lon, $radius, $category) {
-            $filters = $category === 'all'
-                ? array_values(self::CATEGORY_FILTERS)
-                : [self::CATEGORY_FILTERS[$category] ?? '"office"'];
+        $key = $areaId
+            ? "search:area:{$areaId}:{$category}"
+            : "search:{$lat}:{$lon}:{$radius}:{$category}";
 
+        return Cache::remember($key, 21600, function () use ($lat, $lon, $radius, $category, $areaId) {
             $parts = [];
-            foreach ($filters as $f) {
-                $parts[] = "node[{$f}](around:{$radius},{$lat},{$lon});";
-                $parts[] = "way[{$f}](around:{$radius},{$lat},{$lon});";
+
+            if ($areaId) {
+                // Query within exact OSM administrative boundary — no bbox bleed.
+                $filters = $category === 'all'
+                    ? array_values(self::CATEGORY_FILTERS)
+                    : [self::CATEGORY_FILTERS[$category] ?? '"office"'];
+
+                foreach ($filters as $f) {
+                    $parts[] = "node[{$f}](area.a);";
+                    $parts[] = "way[{$f}](area.a);";
+                }
+                $overpassQuery = '[out:json][timeout:45];area(id:' . $areaId . ')->.a;(' . implode('', $parts) . ');out 400 center;';
+                $httpTimeout   = 55;
+            } else {
+                $filters = $category === 'all'
+                    ? array_values(self::CATEGORY_FILTERS)
+                    : [self::CATEGORY_FILTERS[$category] ?? '"office"'];
+
+                foreach ($filters as $f) {
+                    $parts[] = "node[{$f}](around:{$radius},{$lat},{$lon});";
+                    $parts[] = "way[{$f}](around:{$radius},{$lat},{$lon});";
+                }
+                $overpassQuery = '[out:json][timeout:25];(' . implode('', $parts) . ');out center;';
+                $httpTimeout   = 30;
             }
 
-            $overpassQuery = '[out:json][timeout:25];(' . implode('', $parts) . ');out center;';
-            $result = $this->api->post('https://overpass-api.de/api/interpreter', $overpassQuery);
+            $result = $this->api->post('https://overpass-api.de/api/interpreter', $overpassQuery, $httpTimeout);
 
             return collect($result['elements'] ?? [])
                 ->filter(fn($el) => !empty($el['tags']['name']))

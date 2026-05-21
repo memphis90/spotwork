@@ -14,14 +14,20 @@ class JobSearchService
 
     public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = ''): array
     {
-        $q        = implode(' ', $keywords);
+        $q        = implode(' ',  array_merge(['job'], $keywords));
         $isItalia = strtolower(trim($rawCity)) === 'italia';
         $key      = $isItalia
             ? 'jobsearch:' . Str::slug($q) . ':italia'
             : 'jobsearch:' . Str::slug($q) . ":{$lat}:{$lon}:{$radius}";
 
-        return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia) {
-            $serpLocation = $isItalia ? 'Italy' : ($this->geocoding->reverse($lat, $lon) . ', Italy');
+        return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia, $rawCity) {
+            // For named regions/areas (e.g. "Toscana") use the name directly.
+            // For "Milano, MI" style inputs, reverse-geocode the coordinates.
+            $serpLocation = match(true) {
+                $isItalia               => 'Italy',
+                !str_contains($rawCity, ',') => trim($rawCity) . ', Italy',
+                default                 => $this->geocoding->reverse($lat, $lon) . ', Italy',
+            };
 
             $client  = new \GoogleSearchResults(config('services.serpapi.key'));
             $results = json_decode(json_encode($client->get_json([

@@ -9,6 +9,7 @@ import L from 'leaflet'
 const props = defineProps({
   center:     { type: Object,  required: true },          // { lat, lon }
   radius:     { type: Number,  default: 0 },              // in metri
+  geoType:    { type: String,  default: 'city' },         // city | area
   companies:  { type: Array,   default: () => [] },
   selectedId: { type: [String, Number, null], default: null },
   mode:       { type: String,  default: 'idle' },
@@ -79,7 +80,7 @@ function drawCenter() {
 function drawRadius() {
   if (!map) return
   radiusCircle?.remove()
-  if (props.radius && props.mode === 'results') {
+  if (props.radius && props.mode === 'results' && props.geoType === 'city') {
     radiusCircle = L.circle([props.center.lat, props.center.lon], {
       radius: props.radius, color: '#0e1014', weight: 1, opacity: 0.25,
       fillColor: '#0e1014', fillOpacity: 0.04, dashArray: '4 6', interactive: false,
@@ -111,11 +112,21 @@ function drawMarkers() {
 
 watch(() => [props.center.lat, props.center.lon], () => {
   if (!map) return
-  map.flyTo([props.center.lat, props.center.lon], 13, { duration: 0.8 })
+  if (props.geoType === 'area') {
+    map.setView([props.center.lat, props.center.lon], 6, { animate: false })
+  } else {
+    map.flyTo([props.center.lat, props.center.lon], 13, { duration: 0.8 })
+  }
   drawCenter()
 })
 watch(() => [props.radius, props.mode], drawRadius)
-watch(() => props.companies, drawMarkers, { deep: true })
+watch(() => props.companies.map(c => c.id).join(','), () => {
+  drawMarkers()
+  if (props.geoType === 'area' && props.companies.length > 1) {
+    const bounds = L.latLngBounds(props.companies.map(c => [c.lat, c.lon]))
+    try { map?.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 }) } catch (e) {}
+  }
+})
 watch(() => props.selectedId, () => {
   drawMarkers()
   const sel = props.companies.find(c => c.id === props.selectedId)

@@ -12,6 +12,25 @@ const emit = defineEmits(['search', 'close', 'update:query'])
 const local = ref({ ...props.query })
 watch(() => props.open, v => { if (v) local.value = { ...props.query } })
 
+const kwInput = ref('')
+
+function addKeyword() {
+  const kw = kwInput.value.trim().replace(/,+$/, '')
+  if (!kw || (local.value.keywords || []).includes(kw)) return
+  if ((local.value.keywords || []).length >= 5) return
+  local.value = { ...local.value, keywords: [...(local.value.keywords || []), kw] }
+  kwInput.value = ''
+}
+function removeKeyword(kw) {
+  local.value = { ...local.value, keywords: (local.value.keywords || []).filter(k => k !== kw) }
+}
+function onKwKeydown(e) {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addKeyword() }
+  if (e.key === 'Backspace' && !kwInput.value && (local.value.keywords || []).length) {
+    removeKeyword(local.value.keywords.at(-1))
+  }
+}
+
 function commit() {
   emit('update:query', { ...local.value })
   emit('search', { ...local.value })
@@ -33,7 +52,7 @@ function commit() {
     <div class="sw-msearch-body">
       <!-- City -->
       <label class="sw-mfield">
-        <span class="sw-mfield-label">Città</span>
+        <span class="sw-mfield-label">Location</span>
         <div class="sw-mfield-inner">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 14s5-4.5 5-8.5A5 5 0 1 0 3 5.5C3 9.5 8 14 8 14Z" stroke="currentColor" stroke-width="1.4"/>
@@ -50,25 +69,34 @@ function commit() {
       </label>
 
       <!-- City quick-picks -->
-      <div class="sw-mchips">
+<!--      <div class="sw-mchips">
         <button
           v-for="c in ['Milano, MI','Roma, RM','Torino, TO','Bologna, BO','Firenze, FI','Napoli, NA']"
           :key="c"
           :class="['sw-chip', local.city === c && 'is-on']"
           @click="local.city = c"
         >{{ c }}</button>
-      </div>
+      </div>-->
 
       <!-- Radius -->
       <div class="sw-mfield" style="margin-top:22px;">
-        <span class="sw-mfield-label">Raggio</span>
-        <div class="sw-mradio">
-          <button
-            v-for="r in radii"
-            :key="r.value"
-            :class="['sw-mradio-opt', local.radius === r.value && 'is-on']"
-            @click="local.radius = r.value"
-          >{{ r.label }}</button>
+        <div class="sw-mfield-label-row">
+          <span class="sw-mfield-label">Raggio</span>
+          <span class="sw-mfield-value">{{ radii.find(r => r.value === local.radius)?.label }}</span>
+        </div>
+        <div class="sw-mrange-wrap">
+          <input
+            type="range"
+            class="sw-mrange"
+            :min="0"
+            :max="radii.length - 1"
+            :value="radii.findIndex(r => r.value === local.radius)"
+            :style="`--sw-range-pct: ${radii.findIndex(r => r.value === local.radius) / (radii.length - 1) * 100}%`"
+            @input="e => { local.radius = radii[+e.target.value].value }"
+          />
+          <div class="sw-mrange-ticks">
+            <span v-for="r in radii" :key="r.value">{{ r.label }}</span>
+          </div>
         </div>
       </div>
 
@@ -85,6 +113,28 @@ function commit() {
             <span class="sw-mcat-ic">{{ c.icon }}</span>
             <span class="sw-mcat-l">{{ c.label }}</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Keywords -->
+      <div class="sw-mfield" style="margin-top:22px;">
+        <span class="sw-mfield-label">Parole chiave</span>
+        <div class="sw-mfield-inner sw-kw-wrap">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;">
+            <path d="M2 5h12M2 8h8M2 11h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <span v-for="kw in (local.keywords || [])" :key="kw" class="sw-kw-chip">
+            {{ kw }}
+            <button class="sw-kw-remove" @click.prevent="removeKeyword(kw)" aria-label="Rimuovi">×</button>
+          </span>
+          <input
+            v-if="(local.keywords || []).length < 5"
+            class="sw-kw-input"
+            :placeholder="(local.keywords || []).length === 0 ? 'es. php laravel' : ''"
+            v-model="kwInput"
+            @keydown="onKwKeydown"
+            @blur="addKeyword"
+          />
         </div>
       </div>
     </div>

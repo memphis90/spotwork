@@ -5,6 +5,7 @@ defineProps({
   density:  { type: String, default: 'cozy' },
   active:   { type: Boolean, default: false },
   saved:    { type: Boolean, default: false },
+  rating:   { type: Number, default: 0 },
   category: { type: Object, required: true },
 })
 const emit = defineEmits(['select', 'toggleSave'])
@@ -36,6 +37,9 @@ const emit = defineEmits(['select', 'toggleSave'])
         <span>{{ c.size }} dip.</span>
       </div>
       <div v-if="density !== 'compact'" class="sw-card-addr">{{ c.address }}</div>
+      <div v-if="rating" class="sw-stars sw-stars-sm">
+        <span v-for="n in 5" :key="n" :class="['sw-star', n <= rating && 'is-on']">★</span>
+      </div>
       <div class="sw-card-foot">
         <span v-if="c.hiring" class="sw-badge sw-badge-hiring">
           <span class="sw-badge-dot" />

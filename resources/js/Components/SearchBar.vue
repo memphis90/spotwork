@@ -126,7 +126,7 @@ function logout() {
             <path d="M8 14s5-4.5 5-8.5A5 5 0 1 0 3 5.5C3 9.5 8 14 8 14Z" stroke="currentColor" stroke-width="1.4"/>
             <circle cx="8" cy="5.5" r="1.8" stroke="currentColor" stroke-width="1.4"/>
           </svg>
-          <input class="sw-input" placeholder="Città, provincia o Italia"
+          <input class="sw-input" placeholder="Location"
                  :value="query.city"
                  @input="e => { update({ city: e.target.value }); cityOpen = true }"
                  @focus="cityOpen = true"

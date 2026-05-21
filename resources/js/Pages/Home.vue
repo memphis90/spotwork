@@ -37,7 +37,6 @@ watch(sw.mode, v => {
 })
 
 function onSelect(id) { sw.selectedId.value = id }
-function onLoadJobs(id) { sw.loadJobs(id) }
 function onEsc(e) { if (e.key === 'Escape') sw.selectedId.value = null }
 onMounted(() => document.addEventListener('keydown', onEsc))
 onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
@@ -74,7 +73,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
       <MapView
         :center="sw.center.value"
         :radius="sw.query.radius"
-        :companies="sw.mode.value === 'results' ? sw.companies.value : []"
+        :geo-type="sw.geoType.value"
+        :companies="sw.mode.value === 'results' ? sw.filteredCompanies.value : []"
         :selected-id="sw.selectedId.value"
         :mode="sw.mode.value"
         @select="onSelect"
@@ -83,7 +83,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
       <!-- Loading overlay -->
       <Teleport to="body">
         <div v-if="sw.mode.value === 'loading'" class="sw-loading-overlay">
-          <img src="@img/sw_full.jpg" alt="Spotwork" class="sw-loading-logo" />
+          <video src="@img/spotwork.mp4" class="sw-loading-logo" autoplay muted playsinline loop />
         </div>
       </Teleport>
 
@@ -121,6 +121,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
         :filtered-companies="sw.filteredCompanies.value"
         :selected-id="sw.selectedId.value"
         :saved="sw.saved.value"
+        :ratings="sw.ratings.value"
         :filter="sw.filter.value"
         :sort="sw.sort.value"
         :density="density"
@@ -175,6 +176,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
           :filtered-companies="sw.filteredCompanies.value"
           :selected-id="sw.selectedId.value"
           :saved="sw.saved.value"
+          :ratings="sw.ratings.value"
           :filter="sw.filter.value"
           :sort="sw.sort.value"
           :density="density"
@@ -203,12 +205,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
         v-if="sw.selected.value"
         :company="sw.selected.value"
         :is-saved="sw.saved.value.has(sw.selected.value.id)"
-        :jobs="sw.jobs[sw.selected.value.id] || []"
-        :jobs-loading="sw.jobsLoading.value"
+        :rating="sw.ratings.value[sw.selected.value.id] || 0"
         :category="sw.categoryFor(sw.selected.value.category)"
+        :city="sw.query.city"
         @close="sw.selectedId.value = null"
         @toggle-save="sw.toggleSave"
-        @load-jobs="onLoadJobs"
+        @rate="sw.rateCompany"
       />
     </div>
 

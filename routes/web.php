@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn() => Inertia::render('Home'));
+Route::get('/privacy', fn() => Inertia::render('Privacy'));
+Route::get('/cookie', fn() => Inertia::render('Cookie'));
 
 Route::get('/dashboard', fn() => Inertia::render('Dashboard'))
     ->middleware(['auth', 'verified'])->name('dashboard');

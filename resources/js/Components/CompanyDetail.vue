@@ -1,23 +1,21 @@
 <script setup>
-// resources/js/Components/CompanyDetail.vue
 import { ref, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useLoginModal } from '@/Composables/useLoginModal'
 
 const props = defineProps({
-  company:     { type: Object, required: true },
-  isSaved:     { type: Boolean, default: false },
-  jobs:        { type: Array, default: () => [] },
-  jobsLoading: { type: Boolean, default: false },
-  category:    { type: Object, required: true },
+  company:  { type: Object, required: true },
+  isSaved:  { type: Boolean, default: false },
+  rating:   { type: Number, default: 0 },
+  category: { type: Object, required: true },
+  city:     { type: String, default: '' },
 })
-const emit = defineEmits(['close','toggleSave','loadJobs'])
+const emit = defineEmits(['close','toggleSave','rate'])
 
 const page     = usePage()
 const authUser = () => page.props.auth?.user
 const { openLoginModal } = useLoginModal()
 
-const tab    = ref('info')
 const copied = ref(false)
 
 const applyOpen    = ref(false)
@@ -35,7 +33,6 @@ const DEFAULT_MESSAGE =
   'Cordiali saluti'
 
 watch(() => props.company?.id, () => {
-  tab.value          = 'info'
   copied.value       = false
   applyOpen.value    = false
   suggestDone.value  = false
@@ -43,9 +40,9 @@ watch(() => props.company?.id, () => {
   suggestEmail.value = ''
 })
 
-function openJobs() {
-  tab.value = 'jobs'
-  emit('loadJobs', props.company.id)
+function indeedUrl() {
+  return 'https://it.indeed.com/jobs?q=' + encodeURIComponent(props.company.name)
+       + (props.city ? '&l=' + encodeURIComponent(props.city) : '')
 }
 
 async function share() {
@@ -140,7 +137,7 @@ async function submitSuggestEmail() {
           <b>annunci attivi su Indeed</b>
           <span>Aggiornato di recente</span>
         </div>
-        <button class="sw-btn-primary sw-btn-sm" @click="openJobs">Vedi annunci</button>
+        <a class="sw-btn-primary sw-btn-sm" :href="indeedUrl()" target="_blank" rel="noreferrer">Vedi annunci</a>
       </div>
       <div v-else class="sw-status-card sw-status-open">
         <div class="sw-status-num">✉</div>
@@ -152,17 +149,17 @@ async function submitSuggestEmail() {
       </div>
     </div>
 
-    <div class="sw-detail-tabs">
-      <button :class="tab === 'info' && 'is-on'" @click="tab = 'info'">Informazioni</button>
-      <button :class="tab === 'jobs' && 'is-on'"
-              :disabled="!company.hiring"
-              @click="company.hiring && openJobs()">
-        Annunci <em v-if="company.hiring">{{ company.jobs }}</em>
-      </button>
-    </div>
-
     <div class="sw-detail-body">
-      <div v-if="tab === 'info'" class="sw-info">
+      <div class="sw-stars sw-stars-detail">
+        <span v-for="n in 5" :key="n"
+              :class="['sw-star', 'sw-star-btn', n <= rating && 'is-on']"
+              :title="n + ' stelle'"
+              @click="$emit('rate', company.id, rating === n ? 0 : n)">★</span>
+        <span v-if="rating" class="sw-stars-label">{{ rating }}/5</span>
+        <span v-else class="sw-stars-label sw-stars-label-empty">Valuta</span>
+      </div>
+
+      <div class="sw-info">
         <div class="sw-info-row">
           <div class="sw-info-label">Indirizzo</div>
           <div class="sw-info-val">
@@ -221,42 +218,6 @@ async function submitSuggestEmail() {
         </div>
       </div>
 
-      <div v-else-if="tab === 'jobs'" class="sw-jobs">
-        <div v-if="jobsLoading" class="sw-skel-wrap sw-skel-wrap-jobs">
-          <div v-for="i in 4" :key="i" class="sw-skel sw-skel-job">
-            <div class="sw-skel-body">
-              <div class="sw-skel-l sw-skel-l-1" />
-              <div class="sw-skel-l sw-skel-l-2" />
-            </div>
-          </div>
-        </div>
-        <div v-else-if="!jobs.length" class="sw-state">
-          <h3>Nessun annuncio caricato</h3><p>Riprova tra qualche minuto.</p>
-        </div>
-        <ul v-else class="sw-job-list">
-          <li v-for="(j, i) in jobs" :key="i" class="sw-job">
-            <div class="sw-job-l">
-              <h4>{{ j.title }}</h4>
-              <div class="sw-job-meta">
-                <span>{{ j.type }}</span>
-                <span class="sw-dot-sep">·</span>
-                <span>{{ j.salary }}</span>
-                <span class="sw-dot-sep">·</span>
-                <span class="sw-job-posted">{{ j.posted }}</span>
-              </div>
-            </div>
-            <a class="sw-job-cta" :href="j.url" target="_blank" rel="noreferrer">
-              Apri su Indeed
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                <path d="M3 9l6-6M5 3h4v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              </svg>
-            </a>
-          </li>
-        </ul>
-        <div v-if="!jobsLoading && jobs.length" class="sw-jobs-foot">
-          Fonte: Indeed RSS · <a class="sw-link" href="#">Vedi tutti gli annunci →</a>
-        </div>
-      </div>
     </div>
   </div>
 
