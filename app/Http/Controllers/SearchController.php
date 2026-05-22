@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AdzunaService;
 use App\Services\GeocodingService;
 use App\Services\JobSearchService;
 use App\Services\OverpassService;
@@ -12,6 +13,7 @@ class SearchController extends Controller
     public function __construct(
         private GeocodingService $geocoding,
         private OverpassService  $overpass,
+        private AdzunaService    $adzuna,
         private JobSearchService $jobSearch,
     ) {}
 
@@ -46,18 +48,21 @@ class SearchController extends Controller
         // 1. Always fetch geographic companies from Overpass.
         $raw = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category, $areaId);
 
-        // 2. Fetch SerpAPI hiring companies.
+        // 2. Fetch job listings — Adzuna preferred, SerpAPI as fallback.
         $keywords    = $request->input('keywords', []);
         $enrichTerms = $this->buildEnrichTerms($request->category, $keywords);
         $hiringList  = [];
         $hiringByName = collect([]);
         try {
-            $hiringList   = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            $useAdzuna  = config('services.adzuna.app_id') && config('services.adzuna.app_key');
+            $hiringList = $useAdzuna
+                ? $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city)
+                : $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
             $hiringByName = collect($hiringList)
                 ->keyBy(fn($c) => $this->normalizeName($c['name']))
                 ->map(fn($c) => (int) $c['jobs']);
         } catch (\Throwable $e) {
-            \Log::warning('JobSearch enrichment failed', ['error' => $e->getMessage()]);
+            \Log::warning('Job enrichment failed', ['error' => $e->getMessage()]);
         }
 
         // 3. Build Overpass company list, enriching any that match a SerpAPI company.
