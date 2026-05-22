@@ -75,25 +75,30 @@ class DebugSerpapi extends Command
         if (!$appId || !$appKey) {
             $this->error('ADZUNA_APP_ID or ADZUNA_APP_KEY not set');
         } else {
-            $resp = \Illuminate\Support\Facades\Http::timeout(10)->get(
-                'https://api.adzuna.com/v1/api/jobs/it/search/1',
-                [
-                    'app_id'           => $appId,
-                    'app_key'          => $appKey,
-                    'what'             => $company,
-                    'where'            => $city,
-                    'distance'         => 30,
-                    'results_per_page' => 10,
-                ]
-            );
-            $this->line('HTTP status: ' . $resp->status());
-            $results = $resp->json('results') ?? [];
-            $this->line('Jobs found: ' . count($results));
-            foreach (array_slice($results, 0, 5) as $j) {
-                $this->line("  [{$j['company']['display_name']}] {$j['title']} — {$j['location']['display_name']}");
-            }
-            if ($resp->status() !== 200) {
-                $this->line('Response body: ' . $resp->body());
+            try {
+                $resp = \Illuminate\Support\Facades\Http::timeout(15)->get(
+                    'https://api.adzuna.com/v1/api/jobs/it/search/1',
+                    [
+                        'app_id'           => $appId,
+                        'app_key'          => $appKey,
+                        'what'             => $company,
+                        'where'            => $city,
+                        'distance'         => 30,
+                        'results_per_page' => 10,
+                    ]
+                );
+                $this->line('HTTP status: ' . $resp->status());
+                if ($resp->status() !== 200) {
+                    $this->line('Response body: ' . $resp->body());
+                } else {
+                    $results = $resp->json('results') ?? [];
+                    $this->line('Jobs found: ' . count($results));
+                    foreach (array_slice($results, 0, 5) as $j) {
+                        $this->line("  [{$j['company']['display_name']}] {$j['title']} — {$j['location']['display_name']}");
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->error('Adzuna error: ' . $e->getMessage());
             }
         }
     }
