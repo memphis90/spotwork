@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SavedController;
 use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn() => Inertia::render('Home'));
+Route::get('/', fn() => Inertia::render('Home'))->name('home');
 Route::get('/privacy', fn() => Inertia::render('Privacy'));
 Route::get('/cookie', fn() => Inertia::render('Cookie'));
 
@@ -15,6 +16,9 @@ Route::get('/dashboard', fn() => Inertia::render('Dashboard'))
     ->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
     Route::get('/saved', [SavedController::class, 'index'])->name('saved.index');
     Route::delete('/saved/companies/{savedCompany}', [SavedController::class, 'destroyCompany'])->name('saved.company.destroy');
     Route::delete('/saved/jobs/{savedJob}', [SavedController::class, 'destroyJob'])->name('saved.job.destroy');

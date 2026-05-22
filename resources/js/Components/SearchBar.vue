@@ -3,6 +3,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
 import { useLoginModal } from '@/Composables/useLoginModal'
+import NotificationBell from '@/Components/NotificationBell.vue'
 
 
 const props = defineProps({
@@ -12,7 +13,7 @@ const props = defineProps({
   loading:      { type: Boolean, default: false },
   mode:         { type: String, default: 'idle' },
 })
-const emit = defineEmits(['update:query', 'search'])
+const emit = defineEmits(['update:query', 'search', 'toggle-saved'])
 
 const page = usePage()
 const user = () => page.props.auth?.user
@@ -213,17 +214,12 @@ function logout() {
       <!-- account zone -->
       <div class="sw-account" ref="accountRef">
         <template v-if="user()">
-          <a href="/saved" class="sw-icon-btn" title="Salvati">
+          <button class="sw-icon-btn" @click="$emit('toggle-saved')" title="Salvati">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M4 2h8a1 1 0 0 1 1 1v10.5l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
             </svg>
-          </a>
-          <a href="/account/alerts" class="sw-icon-btn" title="Alert lavoro">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2a5 5 0 0 1 5 5v2.5l1.5 2H1.5L3 9.5V7a5 5 0 0 1 5-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-              <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-          </a>
+          </button>
+          <NotificationBell />
         </template>
         <template v-else>
           <button class="sw-icon-btn" @click="openLoginModal()" title="Salvati">
@@ -231,7 +227,7 @@ function logout() {
               <path d="M4 2h8a1 1 0 0 1 1 1v10.5l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
             </svg>
           </button>
-          <button class="sw-icon-btn" @click="openLoginModal()" title="Alert lavoro">
+          <button class="sw-icon-btn" @click="openLoginModal()" title="Notifiche">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 2a5 5 0 0 1 5 5v2.5l1.5 2H1.5L3 9.5V7a5 5 0 0 1 5-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
               <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>

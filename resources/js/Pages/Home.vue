@@ -56,6 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc))
       :mode="sw.mode.value"
       @update:query="q => Object.assign(sw.query, q)"
       @search="onSearch"
+      @toggle-saved="sw.filter.value = 'saved'"
     />
 
     <!-- Mobile compact top bar (results / loading state) -->
