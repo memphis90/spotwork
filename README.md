@@ -1,66 +1,76 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="resources/images/sw_full.png" width="260" alt="Spotwork" />
 </p>
 
-## About Laravel
+<h3 align="center">Scopri quali aziende assumono intorno a te.</h3>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+<p align="center">
+  <a href="https://spotwork.arabel.dev">spotwork.arabel.dev</a> ·
+  <a href="#come-funziona">Come funziona</a> ·
+  <a href="#installazione">Installazione</a> ·
+  <a href="#contribuire">Contribuire</a>
+</p>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**Spotwork** è una mappa interattiva open source che incrocia i dati geografici di [OpenStreetMap](https://www.openstreetmap.org) con gli annunci di lavoro attivi su Indeed, LinkedIn e altri job board — mostrandoti in un colpo d'occhio quali aziende vicino a te stanno assumendo adesso.
 
-## Learning Laravel
+## Come funziona
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. **Cerca una città** e scegli il raggio (2–50 km) e la categoria merceologica.
+2. **Overpass API** recupera le aziende presenti su OpenStreetMap nell'area selezionata.
+3. **Adzuna** e **SerpAPI Google Jobs** cercano gli annunci attivi nella stessa area.
+4. I risultati vengono incrociati per nome: le aziende OSM che matchano un annuncio vengono evidenziate come *"Assume"*; le aziende presenti solo sui job board vengono aggiunte alla mappa come pin separati.
+5. Cliccando su un'azienda puoi vedere i dettagli, il numero di annunci attivi, un link diretto all'offerta e inviare una candidatura spontanea via email.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Stack
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Layer | Tecnologia |
+|---|---|
+| Backend | Laravel 11, PHP 8.3 |
+| Frontend | Vue 3, Inertia.js |
+| Mappa | Leaflet + tile CartoDB Voyager |
+| Dati geo | OpenStreetMap / Overpass API |
+| Dati lavoro | Adzuna API, SerpAPI Google Jobs |
+| Cache | Redis (geocoding, Overpass, job search) |
+| Mobile | NativePHP (Android) |
 
-## Laravel Sponsors
+## Installazione
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+git clone https://github.com/memphis90/spotwork
+cd spotwork
 
-### Premium Partners
+composer install
+npm install
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+cp .env.example .env
+php artisan key:generate
+```
 
-## Contributing
+Configura le variabili nel `.env`:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```env
+SERPAPI_KEY=...
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+```
 
-## Code of Conduct
+```bash
+php artisan migrate
+npm run build
+composer run dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Contribuire
 
-## Security Vulnerabilities
+Il progetto è **open source** e accetta contributi di ogni tipo:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- 🗺 **Dati OSM** — se conosci un'azienda non ancora mappata, [aggiungila su OpenStreetMap](https://www.openstreetmap.org).
+- 🐛 **Bug report** — apri una [issue su GitHub](https://github.com/memphis90/spotwork/issues).
+- 💡 **Feature request** — proponi nuove funzionalità nelle discussioni.
+- 🔧 **Pull request** — fork, branch, PR. Vedi [CLAUDE.md](CLAUDE.md) per le convenzioni del progetto.
 
-## License
+## Licenza
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT — vedi [LICENSE](LICENSE).
