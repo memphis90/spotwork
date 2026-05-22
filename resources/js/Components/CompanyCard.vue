@@ -43,7 +43,7 @@ const emit = defineEmits(['select', 'toggleSave'])
       <div class="sw-card-foot">
         <span v-if="c.hiring" class="sw-badge sw-badge-hiring">
           <span class="sw-badge-dot" />
-          {{ c.jobs }} {{ c.jobs === 1 ? 'annuncio' : 'annunci' }} su Indeed
+          {{ c.jobs }}+ {{ c.jobs === 1 ? 'annuncio' : 'annunci' }}
         </span>
         <span v-else class="sw-badge sw-badge-open">
           <span class="sw-badge-dot" />

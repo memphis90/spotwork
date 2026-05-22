@@ -65,13 +65,17 @@ class SearchController extends Controller
             \Log::warning('Job enrichment failed', ['error' => $e->getMessage()]);
         }
 
-        // 3. Build Overpass company list, enriching any that match a SerpAPI company.
+        // 3. Build Overpass company list, enriching any that match a hiring source.
         $osmNormNames = collect($raw)
             ->map(fn($el) => $this->normalizeName($el['tags']['name'] ?? ''))
             ->filter()
             ->all();
 
-        $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request, $hiringByName) {
+        // Index hiring list by normalized name for job_url lookup.
+        $hiringByNameFull = collect($hiringList)
+            ->keyBy(fn($c) => $this->normalizeName($c['name']));
+
+        $companies = collect($raw)->map(function ($el) use ($lat, $lon, $request, $hiringByName, $hiringByNameFull) {
             $tags   = $el['tags'] ?? [];
             $elLat  = (float) ($el['lat'] ?? $el['center']['lat'] ?? 0);
             $elLon  = (float) ($el['lon'] ?? $el['center']['lon'] ?? 0);
@@ -82,7 +86,9 @@ class SearchController extends Controller
                 $tags['addr:city']        ?? null,
             ])->filter()->implode(', ');
 
-            $hiringCount = $this->resolveHiring($this->normalizeName($tags['name'] ?? ''), $hiringByName);
+            $normName    = $this->normalizeName($tags['name'] ?? '');
+            $hiringCount = $this->resolveHiring($normName, $hiringByName);
+            $jobUrl      = $hiringByNameFull->get($normName)['job_url'] ?? null;
 
             return [
                 'id'       => $el['id'],
@@ -98,6 +104,7 @@ class SearchController extends Controller
                 'size'     => $tags['employees'] ?? null,
                 'hiring'   => $hiringCount > 0,
                 'jobs'     => $hiringCount,
+                'job_url'  => $jobUrl,
             ];
         })->values()->toArray();
 

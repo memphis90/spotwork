@@ -60,7 +60,8 @@ watch(() => props.company?.id, () => {
   loadGlassdoor()
 }, { immediate: true })
 
-function indeedUrl() {
+function jobsUrl() {
+  if (props.company.job_url) return props.company.job_url
   return 'https://it.indeed.com/jobs?q=' + encodeURIComponent(props.company.name)
        + (props.city ? '&l=' + encodeURIComponent(props.city) : '')
 }
@@ -152,12 +153,12 @@ async function submitSuggestEmail() {
 
     <div class="sw-detail-status">
       <div v-if="company.hiring" class="sw-status-card sw-status-hiring">
-        <div class="sw-status-num">{{ company.jobs }}</div>
+        <div class="sw-status-num">{{ company.jobs }}+</div>
         <div class="sw-status-text">
-          <b>annunci attivi su Indeed</b>
-          <span>Aggiornato di recente</span>
+          <b>annunci attivi</b>
+          <span>Fonte: {{ company.job_url ? 'Adzuna' : 'Indeed' }}</span>
         </div>
-        <a class="sw-btn-primary sw-btn-sm" :href="indeedUrl()" target="_blank" rel="noreferrer">Vedi annunci</a>
+        <a class="sw-btn-primary sw-btn-sm" :href="jobsUrl()" target="_blank" rel="noreferrer">Vedi annunci</a>
       </div>
       <div v-else class="sw-status-card sw-status-open">
         <div class="sw-status-num">✉</div>
