@@ -48,6 +48,11 @@ class JobSearchService
                     'source'   => 'serpapi',
                 ]);
 
+                $firstJob  = $companyJobs->first();
+                $applyLink = collect($firstJob['apply_options'] ?? [])
+                    ->sortByDesc(fn($o) => str_contains(strtolower($o['title'] ?? ''), 'indeed') ? 1 : 0)
+                    ->first()['link'] ?? null;
+
                 $companies[] = [
                     'id'       => $company->id,
                     'name'     => $companyName,
@@ -62,6 +67,7 @@ class JobSearchService
                     'size'     => null,
                     'hiring'   => true,
                     'jobs'     => $companyJobs->count(),
+                    'job_url'  => $applyLink,
                 ];
             }
             return $companies;
