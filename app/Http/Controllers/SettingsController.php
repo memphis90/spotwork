@@ -29,12 +29,12 @@ class SettingsController extends Controller
         $user = $request->user();
 
         if ($user->cv_path) {
-            Storage::disk('local')->delete($user->cv_path);
+            Storage::disk()->delete($user->cv_path);
         }
 
         $filename = $request->file('cv')->getClientOriginalName();
         $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
-        $path     = $request->file('cv')->storeAs("cvs/{$user->id}", $filename, 'local');
+        $path     = $request->file('cv')->storeAs("cvs/{$user->id}", $filename);
 
         $user->update(['cv_path' => $path]);
         return back()->with('success', 'CV caricato.');
@@ -44,7 +44,7 @@ class SettingsController extends Controller
     {
         $user = $request->user();
         if ($user->cv_path) {
-            Storage::disk('local')->delete($user->cv_path);
+            Storage::disk()->delete($user->cv_path);
             $user->update(['cv_path' => null]);
         }
         return back()->with('success', 'CV rimosso.');
@@ -54,9 +54,9 @@ class SettingsController extends Controller
     {
         $user = $request->user();
         abort_unless(
-            $user->cv_path && Storage::disk('local')->exists($user->cv_path),
+            $user->cv_path && Storage::disk()->exists($user->cv_path),
             404
         );
-        return Storage::disk('local')->download($user->cv_path);
+        return Storage::disk()->download($user->cv_path);
     }
 }
