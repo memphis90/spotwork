@@ -21,22 +21,12 @@ class JobSearchService
             : 'jobsearch:' . Str::slug($q) . ":{$lat}:{$lon}:{$radius}";
 
         return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia, $rawCity) {
-            // For named regions/areas (e.g. "Toscana") use the name directly.
-            // For "Milano, MI" style inputs, reverse-geocode the coordinates.
-            // Always use the city name the user searched — reverse-geocoding
-            // often returns a province/region and produces off-target results.
             $serpLocation = $isItalia
                 ? 'Italy'
                 : trim(explode(',', $rawCity)[0]) . ', Italy';
 
-            $client  = new \GoogleSearchResults(config('services.serpapi.key'));
-            $results = json_decode(json_encode($client->get_json([
-                'engine'   => 'google_jobs',
-                'q'        => $q,
-                'location' => $serpLocation,
-                'hl'       => 'it',
-                'gl'       => 'it',
-            ])), true);
+            $client = new \GoogleSearchResults(config('services.serpapi.key'));
+            $results = $this->querySerpapi($client, $q, $serpLocation);
 
             $grouped = collect($results['jobs_results'] ?? [])->groupBy('company_name');
 
@@ -76,6 +66,24 @@ class JobSearchService
             }
             return $companies;
         });
+    }
+
+    private function querySerpapi(\GoogleSearchResults $client, string $q, string $location): array
+    {
+        $params = ['engine' => 'google_jobs', 'q' => $q, 'location' => $location, 'hl' => 'it', 'gl' => 'it'];
+        try {
+            return json_decode(json_encode($client->get_json($params)), true);
+        } catch (\Throwable) {
+            // SerpAPI rejects some location strings (regions, provinces).
+            // Retry with Italy-wide search; distance filter in SearchController handles scope.
+            try {
+                $params['location'] = 'Italy';
+                return json_decode(json_encode($client->get_json($params)), true);
+            } catch (\Throwable $e) {
+                \Log::warning('SerpAPI Google Jobs failed', ['error' => $e->getMessage()]);
+                return [];
+            }
+        }
     }
 
     private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float

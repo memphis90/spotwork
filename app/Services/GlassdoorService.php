@@ -12,35 +12,41 @@ class GlassdoorService
         $key = 'glassdoor:' . Str::slug($name) . ':' . Str::slug($city);
 
         return Cache::remember($key, 86400, function () use ($name, $city) {
-            $client = new \GoogleSearchResults(config('services.serpapi.key'));
+            $client   = new \GoogleSearchResults(config('services.serpapi.key'));
+            $location = $city ? trim(explode(',', $city)[0]) . ', Italy' : 'Italy';
 
-            $params = [
-                'engine'   => 'glassdoor',
-                'q'        => $name,
-                'hl'       => 'it',
-                'gl'       => 'it',
-            ];
-            if ($city) {
-                $params['location'] = trim(explode(',', $city)[0]) . ', Italy';
-            }
-
-            $results = json_decode(json_encode($client->get_json($params)), true);
+            $results  = $this->queryGlassdoor($client, $name, $location);
 
             $company = collect($results['organic_results'] ?? [])
-                ->first(fn($r) => isset($r['overall_rating']));
+                ->first(fn($r) => isset($r['overall_rating']) || isset($r['rating']));
 
             if (!$company) {
                 return [];
             }
 
+            $rating = (float) ($company['overall_rating'] ?? $company['rating'] ?? 0);
+
             return [
-                'rating'      => round((float) ($company['overall_rating'] ?? 0), 1),
-                'reviews'     => (int) ($company['reviews_count'] ?? 0),
-                'url'         => $company['url'] ?? null,
-                'ceo_rating'  => isset($company['ceo']['approval_rate'])
-                    ? (int) $company['ceo']['approval_rate']
-                    : null,
+                'rating'  => round($rating, 1),
+                'reviews' => (int) ($company['reviews_count'] ?? $company['number_of_reviews'] ?? 0),
+                'url'     => $company['url'] ?? $company['link'] ?? null,
             ];
         });
+    }
+
+    private function queryGlassdoor(\GoogleSearchResults $client, string $q, string $location): array
+    {
+        $params = ['engine' => 'glassdoor', 'q' => $q, 'location' => $location, 'hl' => 'it', 'gl' => 'it'];
+        try {
+            return json_decode(json_encode($client->get_json($params)), true);
+        } catch (\Throwable) {
+            try {
+                $params['location'] = 'Italy';
+                return json_decode(json_encode($client->get_json($params)), true);
+            } catch (\Throwable $e) {
+                \Log::warning('SerpAPI Glassdoor failed', ['error' => $e->getMessage()]);
+                return [];
+            }
+        }
     }
 }
