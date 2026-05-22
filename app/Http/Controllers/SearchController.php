@@ -54,10 +54,14 @@ class SearchController extends Controller
         $hiringList  = [];
         $hiringByName = collect([]);
         try {
-            $useAdzuna  = config('services.adzuna.app_id') && config('services.adzuna.app_key');
-            $hiringList = $useAdzuna
-                ? $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city)
-                : $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            $useAdzuna = config('services.adzuna.app_id') && config('services.adzuna.app_key');
+            if ($useAdzuna) {
+                $hiringList = $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            }
+            // Fall back to SerpAPI if Adzuna is not configured or returned nothing.
+            if (empty($hiringList)) {
+                $hiringList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            }
             $hiringByName = collect($hiringList)
                 ->keyBy(fn($c) => $this->normalizeName($c['name']))
                 ->map(fn($c) => (int) $c['jobs']);
