@@ -53,26 +53,33 @@ class SearchController extends Controller
         $enrichTerms = $this->buildEnrichTerms($request->category, $keywords);
         $hiringList  = [];
         $hiringByName = collect([]);
-        try {
-            $useAdzuna = config('services.adzuna.app_id') && config('services.adzuna.app_key');
-            $adzunaList = $useAdzuna
-                ? $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city)
-                : [];
-            $serpList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+        $adzunaList = [];
+        $serpList   = [];
 
-            // Merge both sources; if a company appears in both, keep the one with more jobs.
-            $merged = collect(array_merge($adzunaList, $serpList))
-                ->groupBy(fn($c) => $this->normalizeName($c['name']))
-                ->map(fn($group) => $group->sortByDesc('jobs')->first())
-                ->values();
-
-            $hiringList   = $merged->toArray();
-            $hiringByName = $merged
-                ->keyBy(fn($c) => $this->normalizeName($c['name']))
-                ->map(fn($c) => (int) $c['jobs']);
-        } catch (\Throwable $e) {
-            \Log::warning('Job enrichment failed', ['error' => $e->getMessage()]);
+        if (config('services.adzuna.app_id') && config('services.adzuna.app_key')) {
+            try {
+                $adzunaList = $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            } catch (\Throwable $e) {
+                \Log::warning('Adzuna enrichment failed', ['error' => $e->getMessage()]);
+            }
         }
+
+        try {
+            $serpList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+        } catch (\Throwable $e) {
+            \Log::warning('SerpAPI enrichment failed', ['error' => $e->getMessage()]);
+        }
+
+        // Merge both sources; if a company appears in both, keep the one with more jobs.
+        $merged = collect(array_merge($adzunaList, $serpList))
+            ->groupBy(fn($c) => $this->normalizeName($c['name']))
+            ->map(fn($group) => $group->sortByDesc('jobs')->first())
+            ->values();
+
+        $hiringList   = $merged->toArray();
+        $hiringByName = $merged
+            ->keyBy(fn($c) => $this->normalizeName($c['name']))
+            ->map(fn($c) => (int) $c['jobs']);
 
         // 3. Build Overpass company list, enriching any that match a hiring source.
         $osmNormNames = collect($raw)
