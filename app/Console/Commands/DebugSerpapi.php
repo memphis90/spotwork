@@ -76,7 +76,7 @@ class DebugSerpapi extends Command
             $this->error('ADZUNA_APP_ID or ADZUNA_APP_KEY not set');
         } else {
             try {
-                $resp = \Illuminate\Support\Facades\Http::timeout(15)->get(
+                $resp = \Illuminate\Support\Facades\Http::timeout(4)->get(
                     'https://api.adzuna.com/v1/api/jobs/it/search/1',
                     [
                         'app_id'           => $appId,

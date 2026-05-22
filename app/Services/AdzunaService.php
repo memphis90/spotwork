@@ -18,7 +18,7 @@ class AdzunaService
         $key        = 'adzuna:' . Str::slug($what) . ':' . Str::slug($where) . ':' . $distanceKm;
 
         return Cache::remember($key, 3600, function () use ($lat, $lon, $what, $where, $distanceKm) {
-            $response = Http::timeout(15)->get(self::BASE, [
+            $response = Http::timeout(4)->get(self::BASE, [
                 'app_id'           => config('services.adzuna.app_id'),
                 'app_key'          => config('services.adzuna.app_key'),
                 'what'             => $what,
