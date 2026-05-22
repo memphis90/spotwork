@@ -10,22 +10,25 @@ class AdzunaService
 {
     private const BASE = 'https://api.adzuna.com/v1/api/jobs/it/search/1';
 
-    public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = ''): array
+    public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = '', bool $wide = false): array
     {
         $what       = implode(' ', $keywords) ?: 'offerte lavoro';
         $where      = trim(explode(',', $rawCity)[0]);
-        $distanceKm = max(5, (int) round($radius / 1000));
-        $key        = 'adzuna:' . Str::slug($what) . ':' . Str::slug($where) . ':' . $distanceKm;
+        $distanceKm = $wide ? null : max(5, (int) round($radius / 1000));
+        $key        = 'adzuna:' . Str::slug($what) . ':' . Str::slug($where) . ':' . ($distanceKm ?? 'wide');
 
         return Cache::remember($key, 3600, function () use ($lat, $lon, $what, $where, $distanceKm) {
-            $response = Http::timeout(4)->get(self::BASE, [
+            $params = [
                 'app_id'           => config('services.adzuna.app_id'),
                 'app_key'          => config('services.adzuna.app_key'),
                 'what'             => $what,
                 'where'            => $where,
-                'distance'         => $distanceKm,
                 'results_per_page' => 50,
-            ]);
+            ];
+            if ($distanceKm !== null) {
+                $params['distance'] = $distanceKm;
+            }
+            $response = Http::timeout(4)->get(self::BASE, $params);
 
             if (!$response->successful()) {
                 \Log::warning('Adzuna search failed', [

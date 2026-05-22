@@ -21,7 +21,7 @@ class SearchController extends Controller
     {
         $request->validate([
             'city'       => 'required|string|max:100',
-            'radius'     => 'required|integer|in:2000,5000,10000,25000,50000',
+            'radius'     => 'nullable|integer|in:2000,5000,10000,25000,50000',
             'category'   => 'required|string|in:all,it,industry,retail,health,food,finance',
             'keywords'   => 'sometimes|array|max:5',
             'keywords.*' => 'string|max:50|regex:/^[\pL\pN\s\-\.+#]+$/u',
@@ -45,8 +45,11 @@ class SearchController extends Controller
             };
         }
 
+        $radius = (int) ($request->radius ?? 5000);
+        $isWide = $geoType === 'area';
+
         // 1. Always fetch geographic companies from Overpass.
-        $raw = $this->overpass->search($lat, $lon, (int) $request->radius, $request->category, $areaId);
+        $raw = $this->overpass->search($lat, $lon, $radius, $request->category, $areaId);
 
         // 2. Fetch job listings — Adzuna preferred, SerpAPI as fallback.
         $keywords    = $request->input('keywords', []);
@@ -58,14 +61,14 @@ class SearchController extends Controller
 
         if (config('services.adzuna.app_id') && config('services.adzuna.app_key')) {
             try {
-                $adzunaList = $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+                $adzunaList = $this->adzuna->search($lat, $lon, $radius, $enrichTerms, $request->city, $isWide);
             } catch (\Throwable $e) {
                 \Log::warning('Adzuna enrichment failed', ['error' => $e->getMessage()]);
             }
         }
 
         try {
-            $serpList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+            $serpList = $this->jobSearch->search($lat, $lon, $radius, $enrichTerms, $request->city, $isWide);
         } catch (\Throwable $e) {
             \Log::warning('SerpAPI enrichment failed', ['error' => $e->getMessage()]);
         }

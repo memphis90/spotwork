@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { isWideLocation } from '@/utils/location'
 
 const props = defineProps({
   open:       { type: Boolean, required: true },
@@ -78,8 +79,8 @@ function commit() {
         >{{ c }}</button>
       </div>-->
 
-      <!-- Radius -->
-      <div class="sw-mfield" style="margin-top:22px;">
+      <!-- Radius — hidden for wide locations -->
+      <div v-if="!isWideLocation(local.city)" class="sw-mfield" style="margin-top:22px;">
         <div class="sw-mfield-label-row">
           <span class="sw-mfield-label">Raggio</span>
           <span class="sw-mfield-value">{{ radii.find(r => r.value === local.radius)?.label }}</span>

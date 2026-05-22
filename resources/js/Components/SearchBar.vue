@@ -4,6 +4,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
 import { useLoginModal } from '@/Composables/useLoginModal'
 import NotificationBell from '@/Components/NotificationBell.vue'
+import { isWideLocation } from '@/utils/location'
 
 
 const props = defineProps({
@@ -144,8 +145,8 @@ function logout() {
           </div>
         </div>
 
-        <!-- radius — hidden when Italia is selected -->
-        <div v-if="query.city !== 'Italia'" class="sw-field sw-field-radius" ref="radiusRef">
+        <!-- radius — hidden for wide locations (regions, country, remote) -->
+        <div v-if="!isWideLocation(query.city)" class="sw-field sw-field-radius" ref="radiusRef">
           <svg class="sw-field-ic" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/>
             <circle cx="8" cy="8" r="1.4" fill="currentColor"/>

@@ -12,17 +12,16 @@ class JobSearchService
         private GeocodingService $geocoding,
     ) {}
 
-    public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = ''): array
+    public function search(float $lat, float $lon, int $radius, array $keywords, string $rawCity = '', bool $wide = false): array
     {
-        $q        = implode(' ', $keywords) ?: 'offerte lavoro';
-        $isItalia = strtolower(trim($rawCity)) === 'italia';
-        $key      = $isItalia
-            ? 'jobsearch:' . Str::slug($q) . ':italia'
+        $q   = implode(' ', $keywords) ?: 'offerte lavoro';
+        $key = $wide
+            ? 'jobsearch:' . Str::slug($q) . ':' . Str::slug($rawCity)
             : 'jobsearch:' . Str::slug($q) . ":{$lat}:{$lon}:{$radius}";
 
-        return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $isItalia, $rawCity) {
-            $serpLocation = $isItalia
-                ? 'Italy'
+        return Cache::remember($key, 3600, function () use ($lat, $lon, $q, $wide, $rawCity) {
+            $serpLocation = $wide
+                ? (strtolower(trim($rawCity)) === 'italia' ? 'Italy' : trim($rawCity))
                 : trim(explode(',', $rawCity)[0]) . ', Italy';
 
             $client = new \GoogleSearchResults(config('services.serpapi.key'));
