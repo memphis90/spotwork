@@ -55,14 +55,19 @@ class SearchController extends Controller
         $hiringByName = collect([]);
         try {
             $useAdzuna = config('services.adzuna.app_id') && config('services.adzuna.app_key');
-            if ($useAdzuna) {
-                $hiringList = $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
-            }
-            // Fall back to SerpAPI if Adzuna is not configured or returned nothing.
-            if (empty($hiringList)) {
-                $hiringList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
-            }
-            $hiringByName = collect($hiringList)
+            $adzunaList = $useAdzuna
+                ? $this->adzuna->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city)
+                : [];
+            $serpList = $this->jobSearch->search($lat, $lon, (int) $request->radius, $enrichTerms, $request->city);
+
+            // Merge both sources; if a company appears in both, keep the one with more jobs.
+            $merged = collect(array_merge($adzunaList, $serpList))
+                ->groupBy(fn($c) => $this->normalizeName($c['name']))
+                ->map(fn($group) => $group->sortByDesc('jobs')->first())
+                ->values();
+
+            $hiringList   = $merged->toArray();
+            $hiringByName = $merged
                 ->keyBy(fn($c) => $this->normalizeName($c['name']))
                 ->map(fn($c) => (int) $c['jobs']);
         } catch (\Throwable $e) {
