@@ -10,7 +10,7 @@
       incrociati con annunci Indeed.
       Progetto open source — <a href="https://github.com/memphis90/spotwork" target="_blank" rel="noreferrer" class="sw-footer-link">contribuisci su GitHub</a>.
     </p>
-    <a href="https://ko-fi.com/spotwork" target="_blank" rel="noreferrer" class="sw-footer-donate">
+    <a href="https://github.com/sponsors/memphis90" target="_blank" rel="noreferrer" class="sw-footer-donate">
       ☕ Offrici un caffè
     </a>
   </footer>
