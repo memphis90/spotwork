@@ -9,7 +9,7 @@ const props = defineProps({
   categories: { type: Array, required: true },
   radii:      { type: Array, required: true },
 })
-defineEmits(['open-search'])
+defineEmits(['open-search', 'open-settings'])
 
 const page = usePage()
 const user = () => page.props.auth?.user
@@ -52,7 +52,8 @@ function userInitial() {
       </span>
     </button>
 
-    <button v-if="user()" class="sw-mtop-icon" style="font-size:.78rem;font-weight:700;background:var(--sw-accent);color:#fff;border:0;">
+    <button v-if="user()" class="sw-mtop-icon" style="font-size:.78rem;font-weight:700;background:var(--sw-accent);color:#fff;border:0;"
+            @click="$emit('open-settings')" :aria-label="`Account di ${user().name}`">
       {{ userInitial() }}
     </button>
     <button v-else class="sw-mtop-icon" @click="openLoginModal()" aria-label="Accedi">

@@ -14,7 +14,7 @@ const props = defineProps({
   loading:      { type: Boolean, default: false },
   mode:         { type: String, default: 'idle' },
 })
-const emit = defineEmits(['update:query', 'search', 'toggle-saved'])
+const emit = defineEmits(['update:query', 'search', 'toggle-saved', 'open-settings'])
 
 const page = usePage()
 const user = () => page.props.auth?.user
@@ -240,7 +240,7 @@ function logout() {
             {{ userInitial() }}
           </button>
           <div v-if="accountOpen" class="sw-account-menu">
-            <a href="/settings" class="sw-account-item">Impostazioni</a>
+            <button class="sw-account-item" @click="$emit('open-settings'); accountOpen = false">Impostazioni</button>
             <button class="sw-account-item sw-account-item--danger" @click="logout">Esci</button>
           </div>
         </template>

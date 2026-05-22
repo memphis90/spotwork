@@ -887,6 +887,69 @@ body {
 .st-uploading    { font-size: .8rem; color: var(--sw-muted); text-align: center; }
 .sw-icon-btn:active { color: var(--sw-teal); }
 
+/* ── Settings Modal (sw-smod-*) ── */
+.sw-smod-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(14,16,20,.45); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.sw-smod {
+  width: 100%; max-width: 520px; max-height: 90vh;
+  background: var(--sw-surface);
+  border-radius: var(--sw-radius-lg);
+  box-shadow: var(--sw-shadow-2);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sw-smod-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 8px 0 8px;
+  border-bottom: 1px solid var(--sw-line);
+  flex-shrink: 0;
+}
+.sw-smod-tabs { display: flex; gap: 2px; }
+.sw-smod-tab {
+  padding: 10px 16px; font-size: 13px; font-weight: 600;
+  background: none; border: none; color: var(--sw-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.sw-smod-tab:hover { color: var(--sw-ink); }
+.sw-smod-tab.is-on { color: var(--sw-ink); border-bottom-color: var(--sw-accent); }
+.sw-smod-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: none; border: none; color: var(--sw-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: color .15s, background .15s; flex-shrink: 0;
+}
+.sw-smod-close:hover { color: var(--sw-ink); background: var(--sw-line); }
+.sw-smod-body { overflow-y: auto; flex: 1; padding: 0 4px; }
+.sw-smod-fields { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.sw-smod-field { display: flex; flex-direction: column; gap: 4px; }
+.sw-smod-label { font-size: 12px; font-weight: 600; color: var(--sw-muted); }
+.sw-smod-input {
+  padding: 8px 12px; border: 1px solid var(--sw-line);
+  border-radius: var(--sw-radius-sm); font: 14px/1.5 inherit;
+  background: var(--sw-bg); color: var(--sw-ink); outline: none;
+  transition: border-color .15s;
+}
+.sw-smod-input:focus { border-color: var(--sw-accent); }
+.sw-smod-link { color: var(--sw-accent); text-decoration: underline; }
+.sw-smod-logout {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border: 1px solid var(--sw-line);
+  border-radius: var(--sw-radius-sm); background: none;
+  font: 13px/1 inherit; color: #dc2626; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.sw-smod-logout:hover { background: #fef2f2; border-color: #fca5a5; }
+.st-section--danger { padding-bottom: 20px; }
+
+@media (max-width: 640px) {
+  .sw-smod-overlay { padding: 0; align-items: flex-end; }
+  .sw-smod { max-width: 100%; border-radius: var(--sw-radius-lg) var(--sw-radius-lg) 0 0; max-height: 92vh; }
+}
+
 /* ───── Apply modal (sw-apply-*) ───── */
 .sw-apply-backdrop {
   position: fixed; inset: 0; z-index: 900;
