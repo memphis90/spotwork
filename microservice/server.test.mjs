@@ -48,3 +48,46 @@ describe('Auth middleware', () => {
     assert.notEqual(res.status, 401);
   });
 });
+
+describe('POST /scan', () => {
+  let server;
+  before(async () => {
+    const { default: app } = await import(`./server.mjs?t=${Date.now()}`);
+    server = app.listen(0);
+  });
+  after(() => server?.close());
+
+  it('returns 400 when watched_companies is missing', async () => {
+    const port = server.address().port;
+    const res = await fetch(`http://localhost:${port}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 400);
+  });
+
+  it('returns 400 when watched_companies is empty array', async () => {
+    const port = server.address().port;
+    const res = await fetch(`http://localhost:${port}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ watched_companies: [] }),
+    });
+    assert.equal(res.status, 400);
+  });
+
+  it('returns 200 with jobs array for valid input', async () => {
+    const port = server.address().port;
+    const res = await fetch(`http://localhost:${port}/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        watched_companies: [{ name: 'Test', careers_url: 'https://example.com', provider: 'greenhouse' }],
+      }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(Array.isArray(body.jobs));
+  });
+});
