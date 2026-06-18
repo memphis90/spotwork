@@ -91,3 +91,34 @@ describe('POST /scan', () => {
     assert.ok(Array.isArray(body.jobs));
   });
 });
+
+describe('POST /fetch-jd', () => {
+  let server;
+  before(async () => {
+    const { default: app } = await import(`./server.mjs?t=${Date.now()}`);
+    server = app.listen(0);
+  });
+  after(() => server?.close());
+
+  it('returns 400 when url is missing', async () => {
+    const port = server.address().port;
+    const res = await fetch(`http://localhost:${port}/fetch-jd`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 400);
+  });
+
+  it('returns 200 with description string for a real URL', async () => {
+    const port = server.address().port;
+    const res = await fetch(`http://localhost:${port}/fetch-jd`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'https://example.com' }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(typeof body.description, 'string');
+  });
+});

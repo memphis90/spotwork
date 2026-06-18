@@ -4,6 +4,7 @@ import { existsSync, readdirSync } from 'fs';
 import { pathToFileURL, fileURLToPath } from 'url';
 import path from 'path';
 import { makeHttpCtx } from './providers/_http.mjs';
+import { chromium } from 'playwright';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -74,6 +75,32 @@ app.post('/scan', requireApiKey, async (req, res) => {
   }
 
   res.json({ jobs: allJobs });
+});
+
+app.post('/fetch-jd', requireApiKey, async (req, res) => {
+  const { url } = req.body ?? {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'url is required' });
+  }
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    const description = await page.evaluate(() => {
+      const el = document.querySelector(
+        'main, article, [role="main"], .job-description, #job-description, .description'
+      ) ?? document.body;
+      return el.innerText.trim().slice(0, 8000);
+    });
+    res.json({ description });
+  } catch (err) {
+    console.error(`fetch-jd ${url}: ${err.message}`);
+    res.json({ description: '' });
+  } finally {
+    await browser?.close();
+  }
 });
 
 const PORT = process.env.PORT ?? 3001;
