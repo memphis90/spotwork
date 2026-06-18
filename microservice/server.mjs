@@ -1,5 +1,6 @@
 // @ts-check
 import express from 'express';
+import { pathToFileURL } from 'url';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -21,7 +22,7 @@ app.post('/scan', requireApiKey, (_req, res) =>
 );
 
 const PORT = process.env.PORT ?? 3001;
-if (process.argv[1] && new URL(import.meta.url).pathname.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   app.listen(PORT, () => console.log(`career-ops microservice on :${PORT}`));
 }
 
