@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
-    protected $fillable = ['osm_id', 'name', 'lat', 'lon', 'category', 'address', 'email', 'source', 'email_scraped_at'];
+    protected $fillable = ['osm_id', 'name', 'lat', 'lon', 'category', 'address', 'email', 'source', 'email_scraped_at', 'portal_url', 'ats_provider'];
 
     public function savedByUsers(): HasMany
     {
@@ -21,7 +21,7 @@ class Company extends Model
 
     public static function upsertFromData(array $data): self
     {
-        if (!empty($data['osm_id'])) {
+        if (! empty($data['osm_id'])) {
             return static::firstOrCreate(
                 ['osm_id' => $data['osm_id']],
                 $data

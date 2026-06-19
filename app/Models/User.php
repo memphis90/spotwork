@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     protected $fillable = ['name', 'email', 'password', 'application_message', 'cv_path'];
@@ -20,7 +22,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
         ];
     }
 
@@ -37,5 +39,10 @@ class User extends Authenticatable
     public function jobAlerts(): HasMany
     {
         return $this->hasMany(JobAlert::class);
+    }
+
+    public function careerProfile(): HasOne
+    {
+        return $this->hasOne(UserCareerProfile::class);
     }
 }
