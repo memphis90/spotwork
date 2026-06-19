@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('companies:scrape-emails')->weekly();
+Schedule::command('portals:scan')->daily();
