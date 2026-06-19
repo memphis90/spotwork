@@ -40,12 +40,21 @@ return [
     ],
 
     'adzuna' => [
-        'app_id'  => env('ADZUNA_APP_ID'),
+        'app_id' => env('ADZUNA_APP_ID'),
         'app_key' => env('ADZUNA_APP_KEY'),
     ],
 
     'scraperapi' => [
         'key' => env('SCRAPERAPI_KEY'),
+    ],
+
+    'career_ops' => [
+        'url' => env('CAREER_OPS_URL', 'http://localhost:3001'),
+        'key' => env('CAREER_OPS_KEY'),
+    ],
+
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
     ],
 
 ];
