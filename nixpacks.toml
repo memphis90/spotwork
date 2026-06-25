@@ -1,6 +1,7 @@
 [phases.setup]
 nixPkgs = [
   "php82",
+  "php82Packages.composer",
   "php82Extensions.simplexml",
   "php82Extensions.curl",
   "php82Extensions.mbstring",
