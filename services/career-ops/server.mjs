@@ -99,6 +99,7 @@ app.post('/fetch-jd', async (req, res) => {
   }
 });
 
+app.get('/', (_req, res) => res.json({ ok: true }));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
